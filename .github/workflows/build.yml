@@ -1,0 +1,61 @@
+name: Build ReverseReverb VST3
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-windows:
+    name: Build VST3 (Windows)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive  # pulls in JUCE as a submodule
+
+      - name: Configure CMake
+        run: |
+          cmake -B build -S . `
+            -DCMAKE_BUILD_TYPE=Release `
+            -G "Visual Studio 17 2022"
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Upload VST3 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ReverseReverb-VST3-Windows
+          # GitHub stores the built .vst3 here — download it from the Actions tab
+          path: build/ReverseReverb_artefacts/Release/VST3/ReverseReverb.vst3
+          retention-days: 14  # artifact expires after 14 days
+
+  build-mac:
+    name: Build VST3 (Mac)
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Configure CMake
+        run: |
+          cmake -B build -S . \
+            -DCMAKE_BUILD_TYPE=Release \
+            -G Xcode
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Upload VST3 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ReverseReverb-VST3-Mac
+          path: build/ReverseReverb_artefacts/Release/VST3/ReverseReverb.vst3
+          retention-days: 14
