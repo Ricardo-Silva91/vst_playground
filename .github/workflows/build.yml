@@ -15,7 +15,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          submodules: recursive  # pulls in JUCE as a submodule
+          submodules: recursive
 
       - name: Configure CMake
         run: |
@@ -30,9 +30,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ReverseReverb-VST3-Windows
-          # GitHub stores the built .vst3 here — download it from the Actions tab
           path: build/ReverseReverb_artefacts/Release/VST3/ReverseReverb.vst3
-          retention-days: 14  # artifact expires after 14 days
+          retention-days: 14
 
   build-mac:
     name: Build VST3 (Mac)
@@ -53,9 +52,17 @@ jobs:
       - name: Build
         run: cmake --build build --config Release
 
+      # GitHub Actions destroys .vst3 bundle structure when uploading folders.
+      # We zip it ourselves first so the Contents/ hierarchy is preserved inside
+      # a proper ReverseReverb.vst3 wrapper when you unzip on your Mac.
+      - name: Zip VST3 bundle
+        run: |
+          cd build/ReverseReverb_artefacts/Release/VST3
+          zip -r ReverseReverb-Mac.zip ReverseReverb.vst3
+
       - name: Upload VST3 artifact
         uses: actions/upload-artifact@v4
         with:
           name: ReverseReverb-VST3-Mac
-          path: build/ReverseReverb_artefacts/Release/VST3/ReverseReverb.vst3
+          path: build/ReverseReverb_artefacts/Release/VST3/ReverseReverb-Mac.zip
           retention-days: 14
