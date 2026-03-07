@@ -69,13 +69,23 @@ That's it. GitHub Actions automatically starts building.
 2. Open FL Studio → Options → Manage Plugins → Start Scan
 3. The plugin will appear in your plugin browser under Effects
 
+---
+
 ## Installing in FL Studio (Mac)
 
-1. Copy `ReverseReverb.vst3` to:
+1. Download the `ReverseReverb-VST3-Mac` artifact from GitHub Actions — this gives you `ReverseReverb-Mac.zip`
+2. Unzip it — you'll get a `ReverseReverb.vst3` folder (not just a `Contents/` folder)
+3. Copy `ReverseReverb.vst3` to:
    ```
    /Library/Audio/Plug-Ins/VST3/
    ```
-2. Restart FL Studio and scan for new plugins
+4. Run this command in Terminal to remove Apple's quarantine flag:
+   ```bash
+   xattr -dr com.apple.quarantine /Library/Audio/Plug-Ins/VST3/ReverseReverb.vst3
+   ```
+5. Restart FL Studio and scan for new plugins
+
+> **Why the Terminal command?** macOS Gatekeeper blocks plugins that aren't signed with a paid Apple Developer certificate ($99/year). The `xattr` command manually approves the plugin. You'll need to run it once every time you install a newly built version.
 
 ---
 
