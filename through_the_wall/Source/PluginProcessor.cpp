@@ -194,6 +194,11 @@ void ThroughTheWallAudioProcessor::setStateInformation(const void* data, int siz
         apvts.replaceState(juce::ValueTree::fromXml(*xmlState));
 }
 
+juce::AudioProcessorEditor* ThroughTheWallAudioProcessor::createEditor()
+{
+    return new ThroughTheWallAudioProcessorEditor(*this);
+}
+
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new ThroughTheWallAudioProcessor();
