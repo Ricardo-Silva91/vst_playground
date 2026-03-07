@@ -92,9 +92,9 @@ jobs:
         working-directory: ${{ needs.detect.outputs.vst_name }}
         run: |
           cd build
-          # Find the .vst3 bundle and zip it
           VST3_PATH=$(find . -name "*.vst3" -type d | head -n 1)
-          zip -r "$(basename $VST3_PATH).zip" "$VST3_PATH"
+          ZIP_NAME=$(basename "$VST3_PATH" | tr ' ' '_').zip
+          zip -r "$ZIP_NAME" "$VST3_PATH"
 
       - name: Upload VST3 (Mac)
         uses: actions/upload-artifact@v4
