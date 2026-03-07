@@ -10,13 +10,13 @@ A VST3 audio effect that captures, isolates, and reverses the reverb tail of inc
 Download from https://git-scm.com if you don't have it.
 
 ### 2. Create a GitHub repo
-- Go to github.com → New repository → name it `ReverseReverb`
+- Go to github.com → New repository → name it `vst_playground`
 - Set it to Private or Public (your choice)
 
 ### 3. Clone your repo and add these files
 ```bash
-git clone https://github.com/YOUR_USERNAME/ReverseReverb.git
-cd ReverseReverb
+git clone https://github.com/YOUR_USERNAME/vst_playground.git
+cd vst_playground
 ```
 Copy all the project files into this folder.
 
