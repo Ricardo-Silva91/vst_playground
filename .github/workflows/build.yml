@@ -53,6 +53,8 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Configure CMake
         working-directory: ${{ needs.detect.outputs.vst_name }}
@@ -75,6 +77,8 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Configure CMake
         working-directory: ${{ needs.detect.outputs.vst_name }}
