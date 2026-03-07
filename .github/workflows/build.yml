@@ -1,68 +1,98 @@
-name: Build ReverseReverb VST3
+name: Build VST
 
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      vst_name:
+        description: 'VST to build (folder name, e.g. pitch_wobble)'
+        required: true
+        type: choice
+        options:
+          - reverse_reverb
+          - pitch_wobble
 
 jobs:
+  # ── Detect which VST to build from commit message scope ──────────────────
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      vst_name: ${{ steps.parse.outputs.vst_name }}
+      should_build: ${{ steps.parse.outputs.should_build }}
+    steps:
+      - name: Parse commit scope or use manual input
+        id: parse
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VST="${{ github.event.inputs.vst_name }}"
+            echo "vst_name=$VST" >> $GITHUB_OUTPUT
+            echo "should_build=true" >> $GITHUB_OUTPUT
+            echo "Manual trigger: building '$VST'"
+          else
+            MSG="${{ github.event.head_commit.message }}"
+            echo "Commit message: $MSG"
+            # Match conventional commit scope: type(scope): message
+            if [[ "$MSG" =~ ^\w+\(([a-zA-Z0-9_]+)\): ]]; then
+              VST="${BASH_REMATCH[1]}"
+              echo "vst_name=$VST" >> $GITHUB_OUTPUT
+              echo "should_build=true" >> $GITHUB_OUTPUT
+              echo "Detected scope: '$VST'"
+            else
+              echo "vst_name=" >> $GITHUB_OUTPUT
+              echo "should_build=false" >> $GITHUB_OUTPUT
+              echo "No scope found — skipping build."
+            fi
+          fi
+
+  # ── Windows build ─────────────────────────────────────────────────────────
   build-windows:
-    name: Build VST3 (Windows)
+    needs: detect
+    if: needs.detect.outputs.should_build == 'true'
     runs-on: windows-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
+      - uses: actions/checkout@v4
 
       - name: Configure CMake
-        run: |
-          cmake -B build -S . `
-            -DCMAKE_BUILD_TYPE=Release `
-            -G "Visual Studio 17 2022"
+        working-directory: ${{ needs.detect.outputs.vst_name }}
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
+        working-directory: ${{ needs.detect.outputs.vst_name }}
         run: cmake --build build --config Release
 
-      - name: Upload VST3 artifact
+      - name: Upload VST3 (Windows)
         uses: actions/upload-artifact@v4
         with:
-          name: ReverseReverb-VST3-Windows
-          path: build/ReverseReverb_artefacts/Release/VST3/ReverseReverb.vst3
-          retention-days: 14
+          name: ${{ needs.detect.outputs.vst_name }}-VST3-Windows
+          path: ${{ needs.detect.outputs.vst_name }}/build/**/*_artefacts/Release/VST3/
 
+  # ── macOS build ───────────────────────────────────────────────────────────
   build-mac:
-    name: Build VST3 (Mac)
+    needs: detect
+    if: needs.detect.outputs.should_build == 'true'
     runs-on: macos-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
+      - uses: actions/checkout@v4
 
       - name: Configure CMake
-        run: |
-          cmake -B build -S . \
-            -DCMAKE_BUILD_TYPE=Release \
-            -G Xcode
+        working-directory: ${{ needs.detect.outputs.vst_name }}
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
+        working-directory: ${{ needs.detect.outputs.vst_name }}
         run: cmake --build build --config Release
 
-      # GitHub Actions destroys .vst3 bundle structure when uploading folders.
-      # We zip it ourselves first so the Contents/ hierarchy is preserved inside
-      # a proper ReverseReverb.vst3 wrapper when you unzip on your Mac.
-      - name: Zip VST3 bundle
+      - name: Zip VST3 bundle (preserve macOS bundle structure)
+        working-directory: ${{ needs.detect.outputs.vst_name }}
         run: |
-          cd build/ReverseReverb_artefacts/Release/VST3
-          zip -r ReverseReverb-Mac.zip ReverseReverb.vst3
+          cd build
+          # Find the .vst3 bundle and zip it
+          VST3_PATH=$(find . -name "*.vst3" -type d | head -n 1)
+          zip -r "$(basename $VST3_PATH).zip" "$VST3_PATH"
 
-      - name: Upload VST3 artifact
+      - name: Upload VST3 (Mac)
         uses: actions/upload-artifact@v4
         with:
-          name: ReverseReverb-VST3-Mac
-          path: build/ReverseReverb_artefacts/Release/VST3/ReverseReverb-Mac.zip
-          retention-days: 14
+          name: ${{ needs.detect.outputs.vst_name }}-VST3-Mac
+          path: ${{ needs.detect.outputs.vst_name }}/build/*.vst3.zip
