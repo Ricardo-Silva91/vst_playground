@@ -42,47 +42,47 @@ DrumSmashProcessor::createParameterLayout()
     std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
 
     params.push_back (std::make_unique<juce::AudioParameterFloat>
-        (juce::ParameterID{kBitDepth, 1},      "Bit Depth",       1.f,  16.f, 16.f));
+        (kBitDepth,      "Bit Depth",       1.f,  16.f, 16.f));
     params.push_back (std::make_unique<juce::AudioParameterFloat>
-        (juce::ParameterID{kSampleRateDiv, 1}, "SR Divide",        1.f,  32.f,  1.f));
+        (kSampleRateDiv, "SR Divide",        1.f,  32.f,  1.f));
     params.push_back (std::make_unique<juce::AudioParameterFloat>
-        (juce::ParameterID{kDrive, 1},         "Drive",            0.f,   1.f,  0.f));
+        (kDrive,         "Drive",            0.f,   1.f,  0.f));
     params.push_back (std::make_unique<juce::AudioParameterFloat>
-        (juce::ParameterID{kOutputGain, 1},    "Output Gain",      0.f,   2.f,  1.f));
+        (kOutputGain,    "Output Gain",      0.f,   2.f,  1.f));
     params.push_back (std::make_unique<juce::AudioParameterFloat>
-        (juce::ParameterID{kNoiseAmount, 1},   "Noise Amount",     0.f,   1.f,  0.f));
+        (kNoiseAmount,   "Noise Amount",     0.f,   1.f,  0.f));
     params.push_back (std::make_unique<juce::AudioParameterFloat>
-        (juce::ParameterID{kCrackleRate, 1},   "Crackle Rate",     0.f,   1.f,  0.f));
+        (kCrackleRate,   "Crackle Rate",     0.f,   1.f,  0.f));
     params.push_back (std::make_unique<juce::AudioParameterFloat>
-        (juce::ParameterID{kLpfCutoff, 1},     "LPF Cutoff",     200.f, 22000.f, 22000.f));
+        (kLpfCutoff,     "LPF Cutoff",     200.f, 22000.f, 22000.f));
     params.push_back (std::make_unique<juce::AudioParameterFloat>
-        (juce::ParameterID{kHpfCutoff, 1},     "HPF Cutoff",      20.f,  2000.f,  20.f));
+        (kHpfCutoff,     "HPF Cutoff",      20.f,  2000.f,  20.f));
     params.push_back (std::make_unique<juce::AudioParameterFloat>
-        (juce::ParameterID{kCompThreshold, 1}, "Comp Threshold", -60.f,    0.f, -18.f));
+        (kCompThreshold, "Comp Threshold", -60.f,    0.f, -18.f));
     params.push_back (std::make_unique<juce::AudioParameterFloat>
-        (juce::ParameterID{kCompRatio, 1},     "Comp Ratio",       1.f,   20.f,  3.f));
+        (kCompRatio,     "Comp Ratio",       1.f,   20.f,  3.f));
     params.push_back (std::make_unique<juce::AudioParameterFloat>
-        (juce::ParameterID{kCompAttack, 1},    "Comp Attack ms",   0.1f, 200.f, 10.f));
+        (kCompAttack,    "Comp Attack ms",   0.1f, 200.f, 10.f));
     params.push_back (std::make_unique<juce::AudioParameterFloat>
-        (juce::ParameterID{kCompRelease, 1},   "Comp Release ms", 10.f, 2000.f, 150.f));
+        (kCompRelease,   "Comp Release ms", 10.f, 2000.f, 150.f));
     params.push_back (std::make_unique<juce::AudioParameterFloat>
-        (juce::ParameterID{kCompMakeup, 1},    "Comp Makeup dB",   0.f,  24.f,  0.f));
+        (kCompMakeup,    "Comp Makeup dB",   0.f,  24.f,  0.f));
     params.push_back (std::make_unique<juce::AudioParameterFloat>
-        (juce::ParameterID{kReverbRoom, 1},    "Reverb Room",      0.f,   1.f,  0.3f));
+        (kReverbRoom,    "Reverb Room",      0.f,   1.f,  0.3f));
     params.push_back (std::make_unique<juce::AudioParameterFloat>
-        (juce::ParameterID{kReverbWet, 1},     "Reverb Wet",       0.f,   1.f,  0.0f));
+        (kReverbWet,     "Reverb Wet",       0.f,   1.f,  0.0f));
     params.push_back (std::make_unique<juce::AudioParameterFloat>
-        (juce::ParameterID{kReverbDamping, 1}, "Reverb Damping",   0.f,   1.f,  0.5f));
+        (kReverbDamping, "Reverb Damping",   0.f,   1.f,  0.5f));
     params.push_back (std::make_unique<juce::AudioParameterFloat>
-        (juce::ParameterID{kPitchSemitones, 1},"Pitch Semitones", -12.f,  12.f,  0.f));
+        (kPitchSemitones, "Pitch Semitones", -12.f,  12.f,  0.f));
     params.push_back (std::make_unique<juce::AudioParameterFloat>
-        (juce::ParameterID{kWowRate, 1},       "Wow/Flutter Hz",   0.f,   8.f,  0.f));
+        (kWowRate,        "Wow/Flutter Hz",   0.f,   8.f,  0.f));
     params.push_back (std::make_unique<juce::AudioParameterFloat>
-        (juce::ParameterID{kWowDepth, 1},      "Wow/Flutter Cents",0.f,  50.f,  0.f));
+        (kWowDepth,       "Wow/Flutter Cents",0.f,  50.f,  0.f));
     params.push_back (std::make_unique<juce::AudioParameterFloat>
-        (juce::ParameterID{kStereoWidth, 1},   "Stereo Width",     0.f,   2.f,  1.f));
+        (kStereoWidth,    "Stereo Width",     0.f,   2.f,  1.f));
     params.push_back (std::make_unique<juce::AudioParameterFloat>
-        (juce::ParameterID{kTransientBoost, 1},"Transient Boost",  0.f,   1.f,  0.f));
+        (kTransientBoost, "Transient Boost",  0.f,   1.f,  0.f));
 
     return { params.begin(), params.end() };
 }
