@@ -13,6 +13,7 @@ on:
           - reverse_reverb
           - pitch_wobble
           - through_the_wall
+          - drum_smash
 
 jobs:
   # ── Detect which VST to build from commit message scope ──────────────────
