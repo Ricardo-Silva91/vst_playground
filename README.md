@@ -4,6 +4,19 @@ A collection of VST3 plugins built with [JUCE](https://juce.com/) and CMake, com
 
 ---
 
+## Plugins
+
+| Plugin | Description | Knobs | Download |
+|---|---|---|---|
+| `reverse_reverb` | Reverses audio in a window and applies reverb for a swell effect | Room Size, Wet Mix, Window (ms) | [Latest release](https://github.com/Ricardo-Silva91/vst_playground/releases/tag/reverse_reverb-latest) |
+| `pitch_wobble` | Applies subtle random pitch deviations for an organic, human feel | Depth (cents), Rate (Hz), Smoothness | [Latest release](https://github.com/Ricardo-Silva91/vst_playground/releases/tag/pitch_wobble-latest) |
+| `through_the_wall` | Simulates sound passing through a wall with LPF, reverb, and comb filtering | Wall Thickness, Room Bleed, Wall Rattle, Distance | [Latest release](https://github.com/Ricardo-Silva91/vst_playground/releases/tag/through_the_wall-latest) |
+| `drum_smash` | Lo-fi drum character processor with saturation, bit crushing, compression and reverb | 21 parameters across 8 sections | [Latest release](https://github.com/Ricardo-Silva91/vst_playground/releases/tag/drum_smash-latest) |
+
+Each release page contains a Mac (`.zip` with `.vst3` bundle) and Windows (`.zip` with `.vst3` folder) download. See [Installing a Built Plugin](#installing-a-built-plugin) below.
+
+---
+
 ## Repo Structure
 
 ```
@@ -35,7 +48,7 @@ JUCE is included as a git submodule rather than being downloaded per-plugin via 
 ### First-time clone
 
 ```bash
-git clone --recurse-submodules https://github.com/yourname/vst_playground.git
+git clone --recurse-submodules https://github.com/Ricardo-Silva91/vst_playground.git
 ```
 
 ### If you already cloned without submodules
@@ -90,30 +103,30 @@ If no scope is present, no build runs.
 
 ### 2. Manual trigger (workflow_dispatch)
 
-Go to **Actions → Build VST → Run workflow** on GitHub. You'll get a dropdown to pick which plugin to build.
+Go to **Actions → Build VST → Run workflow** on GitHub. You'll get a dropdown to pick which plugin to build and which platforms to target.
 
 ---
 
 ## Installing a Built Plugin
 
-After a build completes, download the artifact from the GitHub Actions run page.
+Download the zip for your platform from the plugin's release page (links in the table above).
 
 ### macOS
 
-1. Unzip the downloaded `.vst3.zip` — this preserves the macOS bundle structure
+1. Unzip the downloaded `*_Mac.zip` — this preserves the macOS bundle structure
 2. Copy the `.vst3` bundle to:
    ```
    /Library/Audio/Plug-Ins/VST3/
    ```
 3. Remove the quarantine flag (required to bypass Gatekeeper):
    ```bash
-   xattr -dr com.apple.quarantine /Library/Audio/Plug-Ins/VST3/YourPlugin.vst3
+   sudo xattr -cr /Library/Audio/Plug-Ins/VST3/YourPlugin.vst3
    ```
 4. Rescan plugins in your DAW
 
 ### Windows
 
-1. Unzip the artifact
+1. Unzip the `*_Windows.zip` artifact
 2. Copy the `.vst3` folder to:
    ```
    C:\Program Files\Common Files\VST3\
@@ -174,12 +187,8 @@ Then unzip locally before installing (see Installing section above).
    ```bash
    git commit -m "feat(my_plugin): initial version"
    ```
-
----
-
-## Plugins
-
-| Plugin | Description | Knobs |
-|---|---|---|
-| `reverse_reverb` | Reverses audio in a window and applies reverb for a swell effect | Room Size, Wet Mix, Window (ms) |
-| `pitch_wobble` | Applies subtle random pitch deviations for an organic, human feel | Depth (cents), Rate (Hz), Smoothness |
+6. Once the build completes, a release will be created at:
+   ```
+   https://github.com/Ricardo-Silva91/vst_playground/releases/tag/my_plugin-latest
+   ```
+   Add a download link for it in the Plugins table above.
