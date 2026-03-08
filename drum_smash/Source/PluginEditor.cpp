@@ -249,5 +249,5 @@ void DrumSmashEditor::paint (juce::Graphics& g)
 // ── createEditor ─────────────────────────────────────────────────────────────
 juce::AudioProcessorEditor* DrumSmashProcessor::createEditor()
 {
-    return new DrumSmashEditor (*this);
+    return nullptr;
 }
