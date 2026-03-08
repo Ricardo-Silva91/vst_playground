@@ -93,11 +93,32 @@ jobs:
         working-directory: ${{ needs.detect.outputs.vst_name }}
         run: cmake --build build --config Release
 
-      - name: Upload VST3 (Windows)
+      - name: Zip VST3 bundle (Windows)
+        working-directory: ${{ needs.detect.outputs.vst_name }}
+        shell: bash
+        run: |
+          cd build
+          VST3_PATH=$(find . -name "*.vst3" -type d | head -n 1)
+          ZIP_NAME=$(basename "$VST3_PATH" | tr ' ' '_')_Windows.zip
+          7z a "$ZIP_NAME" "$VST3_PATH"
+          echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
+
+      - name: Upload VST3 artifact (Windows)
         uses: actions/upload-artifact@v4
         with:
           name: ${{ needs.detect.outputs.vst_name }}-VST3-Windows
-          path: ${{ needs.detect.outputs.vst_name }}/build/**/*_artefacts/Release/VST3/
+          path: ${{ needs.detect.outputs.vst_name }}/build/*_Windows.zip
+
+      - name: Publish rolling release (Windows)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.detect.outputs.vst_name }}-latest
+          name: "${{ needs.detect.outputs.vst_name }} (latest)"
+          body: "Latest automated build of **${{ needs.detect.outputs.vst_name }}**."
+          prerelease: false
+          files: ${{ needs.detect.outputs.vst_name }}/build/*_Windows.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # ── macOS build ───────────────────────────────────────────────────────────
   build-mac:
@@ -122,11 +143,22 @@ jobs:
         run: |
           cd build
           VST3_PATH=$(find . -name "*.vst3" -type d | head -n 1)
-          ZIP_NAME=$(basename "$VST3_PATH" | tr ' ' '_').zip
+          ZIP_NAME=$(basename "$VST3_PATH" | tr ' ' '_')_Mac.zip
           zip -r "$ZIP_NAME" "$VST3_PATH"
 
-      - name: Upload VST3 (Mac)
+      - name: Upload VST3 artifact (Mac)
         uses: actions/upload-artifact@v4
         with:
           name: ${{ needs.detect.outputs.vst_name }}-VST3-Mac
-          path: ${{ needs.detect.outputs.vst_name }}/build/*.vst3.zip
+          path: ${{ needs.detect.outputs.vst_name }}/build/*_Mac.zip
+
+      - name: Publish rolling release (Mac)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.detect.outputs.vst_name }}-latest
+          name: "${{ needs.detect.outputs.vst_name }} (latest)"
+          body: "Latest automated build of **${{ needs.detect.outputs.vst_name }}**."
+          prerelease: false
+          files: ${{ needs.detect.outputs.vst_name }}/build/*_Mac.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
