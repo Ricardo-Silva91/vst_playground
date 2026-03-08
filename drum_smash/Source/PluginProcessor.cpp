@@ -267,13 +267,17 @@ void DrumSmashProcessor::processBlock (juce::AudioBuffer<float>& buffer,
             r = std::tanh (r * d) / std::tanh (d);
         }
 
-        // 4. Vinyl noise + crackle
-        float noise = (rng.nextFloat() * 2.f - 1.f) * noiseAmt * 0.05f;
-        float crackle = 0.f;
-        if (crackleRate > 0.f && rng.nextFloat() < crackleRate * 0.001f)
-            crackle = (rng.nextFloat() * 2.f - 1.f) * 0.4f;
-        l += noise + crackle;
-        r += noise + crackle;
+        // 4. Vinyl noise + crackle -- only when signal is present
+        float inputLevel = std::fabs (L[i]) + (R != nullptr ? std::fabs (R[i]) : 0.f);
+        if (inputLevel > 0.0001f)
+        {
+            float noise = (rng.nextFloat() * 2.f - 1.f) * noiseAmt * 0.05f;
+            float crackle = 0.f;
+            if (crackleRate > 0.f && rng.nextFloat() < crackleRate * 0.001f)
+                crackle = (rng.nextFloat() * 2.f - 1.f) * 0.4f;
+            l += noise + crackle;
+            r += noise + crackle;
+        }
 
         // 5. Transient boost (envelope follower → gain boost on attacks)
         float env = std::fabs (l + r) * 0.5f;
