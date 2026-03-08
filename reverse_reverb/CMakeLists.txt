@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.22)
 project(ReverseReverb VERSION 1.0.0)
 
+set(CMAKE_CXX_STANDARD 17)
+
 # --- Pull in JUCE from the shared submodule at the repo root ---
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../JUCE JUCE_build)
 
@@ -22,10 +24,10 @@ juce_add_plugin(ReverseReverb
 # --- Source files ---
 target_sources(ReverseReverb
     PRIVATE
-        PluginProcessor.cpp
-        PluginProcessor.h
-        PluginEditor.cpp
-        PluginEditor.h
+        Source/PluginProcessor.cpp
+        Source/PluginProcessor.h
+        Source/PluginEditor.cpp
+        Source/PluginEditor.h
 )
 
 # --- JUCE modules this plugin needs ---
