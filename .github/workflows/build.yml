@@ -24,6 +24,9 @@ on:
           - windows
           - mac+windows
 
+permissions:
+  contents: write
+
 jobs:
   # ── Detect which VST to build from commit message scope ──────────────────
   detect:
