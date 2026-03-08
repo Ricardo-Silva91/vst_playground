@@ -230,7 +230,7 @@ void DrumSmashEditor::paint (juce::Graphics& g)
     g.fillRect (0, 46, getWidth(), 2);
 
     // Title
-    g.setFont (juce::Font (juce::FontOptions().withHeight (24.f).withStyle (juce::Font::bold)));
+    g.setFont (juce::Font (juce::FontOptions().withHeight (24.f).withStyle ("Bold")));
     g.setColour (kText);
     g.drawText ("DRUM SMASH", 170, 0, getWidth() - 170, 48, juce::Justification::centredLeft);
 
