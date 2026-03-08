@@ -191,7 +191,7 @@ private:
     > filterChain;
 
     juce::dsp::Compressor<float> compressor;
-    juce::dsp::Reverb reverb;
+    juce::Reverb reverb;
 
     // Bit-crusher state
     float bcPhase = 0.f;

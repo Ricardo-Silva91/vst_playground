@@ -183,6 +183,7 @@ void DrumSmashProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     filterChain.prepare (spec);
     compressor.prepare  (spec);
     reverb.reset();
+    reverb.setSampleRate (sampleRate);
 
     rebuildDSP();
     applyPreset (currentPreset);
