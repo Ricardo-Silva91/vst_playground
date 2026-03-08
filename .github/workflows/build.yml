@@ -14,6 +14,15 @@ on:
           - pitch_wobble
           - through_the_wall
           - drum_smash
+      platforms:
+        description: 'Platforms to build'
+        required: true
+        type: choice
+        default: 'mac'
+        options:
+          - mac
+          - windows
+          - mac+windows
 
 jobs:
   # ── Detect which VST to build from commit message scope ──────────────────
@@ -22,15 +31,29 @@ jobs:
     outputs:
       vst_name: ${{ steps.parse.outputs.vst_name }}
       should_build: ${{ steps.parse.outputs.should_build }}
+      build_mac: ${{ steps.parse.outputs.build_mac }}
+      build_windows: ${{ steps.parse.outputs.build_windows }}
     steps:
       - name: Parse commit scope or use manual input
         id: parse
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             VST="${{ github.event.inputs.vst_name }}"
+            PLATFORMS="${{ github.event.inputs.platforms }}"
             echo "vst_name=$VST" >> $GITHUB_OUTPUT
             echo "should_build=true" >> $GITHUB_OUTPUT
-            echo "Manual trigger: building '$VST'"
+            echo "Manual trigger: building '$VST' for '$PLATFORMS'"
+            # Parse platform selection
+            if [[ "$PLATFORMS" == "mac" ]]; then
+              echo "build_mac=true"     >> $GITHUB_OUTPUT
+              echo "build_windows=false" >> $GITHUB_OUTPUT
+            elif [[ "$PLATFORMS" == "windows" ]]; then
+              echo "build_mac=false"    >> $GITHUB_OUTPUT
+              echo "build_windows=true" >> $GITHUB_OUTPUT
+            else
+              echo "build_mac=true"    >> $GITHUB_OUTPUT
+              echo "build_windows=true" >> $GITHUB_OUTPUT
+            fi
           else
             MSG="${{ github.event.head_commit.message }}"
             echo "Commit message: $MSG"
@@ -39,10 +62,15 @@ jobs:
               VST="${BASH_REMATCH[1]}"
               echo "vst_name=$VST" >> $GITHUB_OUTPUT
               echo "should_build=true" >> $GITHUB_OUTPUT
-              echo "Detected scope: '$VST'"
+              echo "Detected scope: '$VST' — defaulting to mac only"
+              # Push commits default to mac only
+              echo "build_mac=true"     >> $GITHUB_OUTPUT
+              echo "build_windows=false" >> $GITHUB_OUTPUT
             else
               echo "vst_name=" >> $GITHUB_OUTPUT
               echo "should_build=false" >> $GITHUB_OUTPUT
+              echo "build_mac=false"    >> $GITHUB_OUTPUT
+              echo "build_windows=false" >> $GITHUB_OUTPUT
               echo "No scope found — skipping build."
             fi
           fi
@@ -50,7 +78,7 @@ jobs:
   # ── Windows build ─────────────────────────────────────────────────────────
   build-windows:
     needs: detect
-    if: needs.detect.outputs.should_build == 'true'
+    if: needs.detect.outputs.should_build == 'true' && needs.detect.outputs.build_windows == 'true'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -74,7 +102,7 @@ jobs:
   # ── macOS build ───────────────────────────────────────────────────────────
   build-mac:
     needs: detect
-    if: needs.detect.outputs.should_build == 'true'
+    if: needs.detect.outputs.should_build == 'true' && needs.detect.outputs.build_mac == 'true'
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4

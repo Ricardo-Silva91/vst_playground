@@ -12,26 +12,23 @@ static const juce::Colour kKnobFill   { 0xFF0F3460 };
 static const juce::Colour kKnobTrack  { 0xFFE94560 };
 
 // ── Custom LookAndFeel ─────────────────────────────────────────────────────────
-class DSLookAndFeel : public juce::LookAndFeel_V4
+DSLookAndFeel::DSLookAndFeel()
 {
-public:
-    DSLookAndFeel()
-    {
-        setColour (juce::Slider::thumbColourId,             kAccent);
-        setColour (juce::Slider::rotarySliderFillColourId,  kKnobTrack);
-        setColour (juce::Slider::rotarySliderOutlineColourId, kKnobFill);
-        setColour (juce::Slider::backgroundColourId,        kKnobFill);
-        setColour (juce::Label::textColourId,               kText);
-        setColour (juce::TextButton::buttonColourId,        kPanel);
-        setColour (juce::TextButton::buttonOnColourId,      kAccent);
-        setColour (juce::TextButton::textColourOffId,       kTextDim);
-        setColour (juce::TextButton::textColourOnId,        kText);
-    }
+    setColour (juce::Slider::thumbColourId,               kAccent);
+    setColour (juce::Slider::rotarySliderFillColourId,    kKnobTrack);
+    setColour (juce::Slider::rotarySliderOutlineColourId, kKnobFill);
+    setColour (juce::Slider::backgroundColourId,          kKnobFill);
+    setColour (juce::Label::textColourId,                 kText);
+    setColour (juce::TextButton::buttonColourId,          kPanel);
+    setColour (juce::TextButton::buttonOnColourId,        kAccent);
+    setColour (juce::TextButton::textColourOffId,         kTextDim);
+    setColour (juce::TextButton::textColourOnId,          kText);
+}
 
-    void drawRotarySlider (juce::Graphics& g, int x, int y, int width, int height,
-                           float sliderPos, float startAngle, float endAngle,
-                           juce::Slider& slider) override
-    {
+void DSLookAndFeel::drawRotarySlider (juce::Graphics& g, int x, int y, int width, int height,
+                                       float sliderPos, float startAngle, float endAngle,
+                                       juce::Slider&)
+{
         float radius = (float)juce::jmin (width, height) * 0.4f;
         float cx = x + (float)width  * 0.5f;
         float cy = y + (float)height * 0.5f;
@@ -70,16 +67,13 @@ public:
         // Centre dot
         g.setColour (kAccent.withAlpha (0.6f));
         g.fillEllipse (cx - 2.f, cy - 2.f, 4.f, 4.f);
-    }
-};
-
-static DSLookAndFeel gLAF;
+}
 
 // ── Constructor ───────────────────────────────────────────────────────────────
 DrumSmashEditor::DrumSmashEditor (DrumSmashProcessor& p)
     : AudioProcessorEditor (p), proc (p)
 {
-    setLookAndFeel (&gLAF);
+    setLookAndFeel (&laf);
     setSize (880, 620);
 
     buildPresetButtons();
@@ -236,7 +230,7 @@ void DrumSmashEditor::paint (juce::Graphics& g)
     g.fillRect (0, 46, getWidth(), 2);
 
     // Title
-    g.setFont (juce::Font (juce::FontOptions().withHeight (24.f).withStyle ("Bold")));
+    g.setFont (juce::Font (juce::FontOptions().withHeight (24.f).withStyle (juce::Font::bold)));
     g.setColour (kText);
     g.drawText ("DRUM SMASH", 170, 0, getWidth() - 170, 48, juce::Justification::centredLeft);
 
