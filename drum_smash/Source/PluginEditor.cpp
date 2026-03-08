@@ -147,7 +147,7 @@ void DrumSmashEditor::buildKnobs()
         row.slider = std::make_unique<juce::Slider> (juce::Slider::RotaryVerticalDrag,
                                                       juce::Slider::NoTextBox);
         row.label  = std::make_unique<juce::Label>  ("", kKnobDefs[i].label);
-        row.label->setFont (juce::FontOptions (10.f));
+        row.label->setFont (juce::Font (juce::FontOptions (10.f)));
         row.label->setJustificationType (juce::Justification::centred);
         row.attach = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>
             (proc.apvts, kKnobDefs[i].paramId, *row.slider);
@@ -236,13 +236,12 @@ void DrumSmashEditor::paint (juce::Graphics& g)
     g.fillRect (0, 46, getWidth(), 2);
 
     // Title
-    g.setFont (juce::FontOptions (juce::Font::getDefaultSansSerifFontName(), 24.f,
-                                   juce::Font::bold));
+    g.setFont (juce::Font (juce::FontOptions().withHeight (24.f).withStyle ("Bold")));
     g.setColour (kText);
     g.drawText ("DRUM SMASH", 170, 0, getWidth() - 170, 48, juce::Justification::centredLeft);
 
     // Subtitle
-    g.setFont (juce::FontOptions (11.f));
+    g.setFont (juce::Font (juce::FontOptions (11.f)));
     g.setColour (kTextDim);
     g.drawText ("Drum Effects Processor", 170, 28, 300, 18, juce::Justification::left);
 
@@ -274,13 +273,13 @@ void DrumSmashEditor::paint (juce::Graphics& g)
         g.fillRect (juce::Rectangle<float> (x + 2, 56, kW - 4, (float)getHeight() - 64));
         g.setColour (sectionColours[c]);
         g.fillRect (juce::Rectangle<float> (x + 2, 56, kW - 4, 3));
-        g.setFont (juce::FontOptions (8.5f));
+        g.setFont (juce::Font (juce::FontOptions (8.5f)));
         g.setColour (sectionColours[c].brighter (0.3f));
         g.drawText (sectionLabels[c], (int)x, 60, (int)kW, 14, juce::Justification::centred);
     }
 
     // "PRESETS" label at top of preset column
-    g.setFont (juce::FontOptions (10.f));
+    g.setFont (juce::Font (juce::FontOptions (10.f)));
     g.setColour (kAccent);
     g.drawText ("PRESETS", 0, 50, 160, 20, juce::Justification::centred);
 }
