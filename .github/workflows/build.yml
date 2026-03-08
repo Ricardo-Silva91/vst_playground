@@ -35,7 +35,7 @@ jobs:
             MSG="${{ github.event.head_commit.message }}"
             echo "Commit message: $MSG"
             # Match conventional commit scope: type(scope): message
-            if [[ "$MSG" =~ ^\w+\(([a-zA-Z0-9_]+)\): ]]; then
+            if [[ "$MSG" =~ ^[a-zA-Z0-9_]+\(([a-zA-Z0-9_]+)\): ]]; then
               VST="${BASH_REMATCH[1]}"
               echo "vst_name=$VST" >> $GITHUB_OUTPUT
               echo "should_build=true" >> $GITHUB_OUTPUT
