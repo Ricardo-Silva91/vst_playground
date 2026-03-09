@@ -22,7 +22,7 @@ public:
     ~PitchWobbleEditor() override;
 
     void paint   (juce::Graphics&) override;
-    void resized () override {}
+    void resized () override;
 
     void mouseDown      (const juce::MouseEvent&) override;
     void mouseDrag      (const juce::MouseEvent&) override;
@@ -45,6 +45,12 @@ private:
     const juce::Colour textDim { 0xff7A746C };
 
     std::array<KnobState, 3> knobs;
+
+    // Invisible sliders — exist solely so FL Studio can find parameters
+    // for automation. Alpha = 0, mouse interception disabled.
+    juce::Slider ghostDepth, ghostRate, ghostSmooth;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>
+        attachDepth, attachRate, attachSmooth;
 
     juce::Rectangle<float> knobBounds (int index) const;
     int  hitTestKnob (juce::Point<int>) const;

@@ -112,17 +112,6 @@ jobs:
           name: ${{ needs.detect.outputs.vst_name }}-VST3-Windows
           path: ${{ needs.detect.outputs.vst_name }}/build/*_Windows.zip
 
-      - name: Publish rolling release (Windows)
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ needs.detect.outputs.vst_name }}-latest
-          name: "${{ needs.detect.outputs.vst_name }} (latest)"
-          body: "Latest automated build of **${{ needs.detect.outputs.vst_name }}**."
-          prerelease: false
-          files: ${{ needs.detect.outputs.vst_name }}/build/*_Windows.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   # ── macOS build ───────────────────────────────────────────────────────────
   build-mac:
     needs: detect
@@ -155,13 +144,32 @@ jobs:
           name: ${{ needs.detect.outputs.vst_name }}-VST3-Mac
           path: ${{ needs.detect.outputs.vst_name }}/build/*_Mac.zip
 
-      - name: Publish rolling release (Mac)
+  # ── Publish release (runs after both builds, avoids race condition) ───────
+  publish:
+    needs: [detect, build-mac, build-windows]
+    # Run if at least one build was requested and at least one succeeded
+    if: |
+      always() &&
+      needs.detect.outputs.should_build == 'true' &&
+      (needs.build-mac.result == 'success' || needs.build-mac.result == 'skipped') &&
+      (needs.build-windows.result == 'success' || needs.build-windows.result == 'skipped') &&
+      (needs.build-mac.result == 'success' || needs.build-windows.result == 'success')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts for this VST
+        uses: actions/download-artifact@v4
+        with:
+          pattern: ${{ needs.detect.outputs.vst_name }}-VST3-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Publish rolling release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.detect.outputs.vst_name }}-latest
           name: "${{ needs.detect.outputs.vst_name }} (latest)"
           body: "Latest automated build of **${{ needs.detect.outputs.vst_name }}**."
           prerelease: false
-          files: ${{ needs.detect.outputs.vst_name }}/build/*_Mac.zip
+          files: release-assets/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

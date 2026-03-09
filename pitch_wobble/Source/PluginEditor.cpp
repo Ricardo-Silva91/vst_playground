@@ -23,6 +23,31 @@ PitchWobbleEditor::PitchWobbleEditor (PitchWobbleProcessor& p)
         proc.apvts.addParameterListener (k.paramId, this);
     }
 
+    // Ghost sliders — invisible, no mouse interaction, purely for FL Studio
+    // to find parameters and attach automation clips via right-click.
+    auto setupGhost = [](juce::Slider& s)
+    {
+        s.setSliderStyle (juce::Slider::LinearHorizontal);
+        s.setTextBoxStyle (juce::Slider::NoTextBox, true, 0, 0);
+        s.setInterceptsMouseClicks (false, false);
+        s.setAlpha (0.0f);
+    };
+
+    setupGhost (ghostDepth);
+    setupGhost (ghostRate);
+    setupGhost (ghostSmooth);
+
+    addAndMakeVisible (ghostDepth);
+    addAndMakeVisible (ghostRate);
+    addAndMakeVisible (ghostSmooth);
+
+    attachDepth  = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>
+                       (proc.apvts, "depth",  ghostDepth);
+    attachRate   = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>
+                       (proc.apvts, "rate",   ghostRate);
+    attachSmooth = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>
+                       (proc.apvts, "smooth", ghostSmooth);
+
     setSize (W, H);
 }
 
@@ -45,9 +70,16 @@ void PitchWobbleEditor::parameterChanged (const juce::String& paramId, float)
     });
 }
 
-//==============================================================================
-// Layout
-//==============================================================================
+// Ghost sliders are positioned exactly over each knob so FL Studio's
+// right-click hit-test lands on them. They are fully transparent.
+void PitchWobbleEditor::resized()
+{
+    ghostDepth .setBounds (knobBounds (0).toNearestInt());
+    ghostRate  .setBounds (knobBounds (1).toNearestInt());
+    ghostSmooth.setBounds (knobBounds (2).toNearestInt());
+}
+
+
 
 juce::Rectangle<float> PitchWobbleEditor::knobBounds (int i) const
 {
