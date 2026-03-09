@@ -1,12 +1,17 @@
 cmake_minimum_required(VERSION 3.22)
 project(ReverseReverb VERSION 1.0.0)
 
-set(CMAKE_CXX_STANDARD 17)
-
-# --- Pull in JUCE from the shared submodule at the repo root ---
+# JUCE lives at repo root, one level up from this plugin folder
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../JUCE JUCE_build)
 
-# --- Declare the plugin ---
+# Embed font files as binary data accessible via BinaryData.h
+# Place fonts in reverse_reverb/fonts/
+juce_add_binary_data(ReverseReverbFonts
+    SOURCES
+        ${CMAKE_CURRENT_SOURCE_DIR}/fonts/Rajdhani-Bold.ttf
+        ${CMAKE_CURRENT_SOURCE_DIR}/fonts/ShareTechMono-Regular.ttf
+)
+
 juce_add_plugin(ReverseReverb
     COMPANY_NAME         "YourName"
     IS_SYNTH             FALSE
@@ -21,7 +26,6 @@ juce_add_plugin(ReverseReverb
     PRODUCT_NAME         "ReverseReverb"
 )
 
-# --- Source files ---
 target_sources(ReverseReverb
     PRIVATE
         Source/PluginProcessor.cpp
@@ -30,9 +34,9 @@ target_sources(ReverseReverb
         Source/PluginEditor.h
 )
 
-# --- JUCE modules this plugin needs ---
 target_link_libraries(ReverseReverb
     PRIVATE
+        ReverseReverbFonts
         juce::juce_audio_utils
         juce::juce_dsp
     PUBLIC
@@ -41,7 +45,6 @@ target_link_libraries(ReverseReverb
         juce::juce_recommended_warning_flags
 )
 
-# --- Compile definitions ---
 target_compile_definitions(ReverseReverb
     PUBLIC
         JUCE_WEB_BROWSER=0

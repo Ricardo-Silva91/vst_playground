@@ -26,35 +26,26 @@ public:
     void getStateInformation(juce::MemoryBlock& destData) override;
     void setStateInformation(const void* data, int sizeInBytes) override;
 
-    // Parameters exposed to the UI
     juce::AudioParameterFloat* roomSize;
     juce::AudioParameterFloat* wetMix;
-    juce::AudioParameterFloat* windowSizeMs; // how long a reverb capture window is (ms)
+    juce::AudioParameterFloat* windowSizeMs;
 
 private:
-    // --- Core buffers ---
-    // captureBuffer: records incoming dry audio for one full window
     juce::AudioBuffer<float> captureBuffer;
-
-    // reverbBuffer: holds the reverb-only tail (wet - dry), then gets reversed
     juce::AudioBuffer<float> reverbBuffer;
-
-    // playbackBuffer: the final reversed reverb, played out while next window captures
     juce::AudioBuffer<float> playbackBuffer;
 
-    // --- State ---
-    int captureWritePos  = 0;   // where we are writing in the capture window
-    int playbackReadPos  = 0;   // where we are reading the reversed reverb output
-    int windowSizeSamples = 0;  // total samples in one window
-    bool isPlayingBack   = false;
+    int captureWritePos   = 0;
+    int playbackReadPos   = 0;
+    int windowSizeSamples = 0;
+    bool isPlayingBack    = false;
 
     double currentSampleRate = 44100.0;
 
-    // JUCE's built-in reverb processor
     juce::Reverb reverb;
     juce::Reverb::Parameters reverbParams;
 
-    void processWindow(); // called when a capture window is full
+    void processWindow();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ReverseReverbAudioProcessor)
 };
