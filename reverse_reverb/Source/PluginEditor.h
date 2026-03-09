@@ -33,23 +33,15 @@ private:
     void mouseUp         (const juce::MouseEvent&) override;
     void mouseDoubleClick(const juce::MouseEvent&) override;
 
-    void drawChassis   (juce::Graphics&);
-    void drawScrews    (juce::Graphics&);
-    void drawLeftPanel (juce::Graphics&);
-    void drawKnob      (juce::Graphics&, float cx, float cy, float value,
-                        const juce::String& label);
-    void drawRightPanel(juce::Graphics&);
-    void drawSliderRow (juce::Graphics&, juce::Rectangle<float> row,
-                        const juce::String& label, float value,
-                        const juce::String& valueText, bool odd);
-    void drawVUStrip   (juce::Graphics&);
-    void drawScanLines (juce::Graphics&, juce::Rectangle<float> area, float opacity);
+    void drawChassis  (juce::Graphics&);
+    void drawScrews   (juce::Graphics&);
+    void drawPlugin   (juce::Graphics&);
+    void drawKnob     (juce::Graphics&, float cx, float cy, float value,
+                       const juce::String& label, const juce::String& valueText);
+    void drawScanLines(juce::Graphics&, juce::Rectangle<float> area, float opacity);
 
-    juce::Rectangle<float> leftPanel()          const;
-    juce::Rectangle<float> rightPanel()         const;
-    juce::Point<float>     knobCenter(int index) const;
-    juce::Rectangle<float> sliderRow(int index)  const;
-    int                    knobHitTest(juce::Point<float>) const;
+    juce::Point<float> knobCenter(int index) const;
+    int                knobHitTest(juce::Point<float>) const;
 
     float normRoom()   const;
     float normWet()    const;

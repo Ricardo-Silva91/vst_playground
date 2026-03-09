@@ -2,29 +2,27 @@
 #include <BinaryData.h>
 
 //==============================================================================
-static const juce::Colour cChassis   { 0xff141414 };
-static const juce::Colour cPanel     { 0xff1c1c1c };
-static const juce::Colour cMetal     { 0xff2e2e2e };
-static const juce::Colour cEdge      { 0xff0a0a0a };
-static const juce::Colour cAmber     { 0xffe8820a };
-static const juce::Colour cBlue      { 0xff3aace8 };
-static const juce::Colour cGreen     { 0xff4ecf6a };
-static const juce::Colour cTextDim   { 0xff7a746c };
-static const juce::Colour cSilk      { 0xffa09890 };
+static const juce::Colour cChassis  { 0xff141414 };
+static const juce::Colour cMetal    { 0xff2e2e2e };
+static const juce::Colour cEdge     { 0xff0a0a0a };
+static const juce::Colour cAmber    { 0xffe8820a };
+static const juce::Colour cBlue     { 0xff3aace8 };
+static const juce::Colour cTextDim  { 0xff7a746c };
+static const juce::Colour cSilk     { 0xffa09890 };
 
-// Layout constants
-static constexpr float kLeftW    = 160.0f; // left panel width
-static constexpr float kDivider  = 2.0f;
-static constexpr float kKnobR    = 18.0f;  // knob radius — smaller than original to avoid overlap
-static constexpr float kKnobSpX  = 50.0f;  // centre-to-centre spacing — generous air between knobs
-static constexpr float kKnobY    = 185.0f; // knob row Y — pushed lower to give name room to breathe
-static constexpr int   kNumKnobs = 3;
+// Layout — single panel, 3 knobs centred with generous spacing
+static constexpr int   kW         = 400;
+static constexpr int   kH         = 280;
+static constexpr float kKnobR     = 28.0f;   // larger knobs since they're the only control
+static constexpr float kKnobSpX   = 110.0f;  // wide spacing so nothing crowds
+static constexpr float kKnobY     = 155.0f;  // vertically centred with room for name above
+static constexpr int   kNumKnobs  = 3;
 
 //==============================================================================
 ReverseReverbAudioProcessorEditor::ReverseReverbAudioProcessorEditor(ReverseReverbAudioProcessor& p)
     : AudioProcessorEditor(&p), audioProcessor(p)
 {
-    setSize(480, 300);  // taller editor so rows have generous vertical space
+    setSize(kW, kH);
 
     rajdhaniBold  = juce::Font(juce::FontOptions(
         juce::Typeface::createSystemTypefaceFor(BinaryData::RajdhaniBold_ttf,
@@ -50,38 +48,17 @@ void ReverseReverbAudioProcessorEditor::timerCallback()
 //==============================================================================
 // Layout
 //==============================================================================
-juce::Rectangle<float> ReverseReverbAudioProcessorEditor::leftPanel() const
-{
-    return { 0.0f, 0.0f, kLeftW, (float)getHeight() };
-}
-
-juce::Rectangle<float> ReverseReverbAudioProcessorEditor::rightPanel() const
-{
-    return { kLeftW + kDivider + 1.0f, 0.0f,
-             (float)getWidth() - kLeftW - kDivider - 1.0f, (float)getHeight() };
-}
-
 juce::Point<float> ReverseReverbAudioProcessorEditor::knobCenter(int index) const
 {
     float totalW = kKnobSpX * (kNumKnobs - 1);
-    float startX = (kLeftW - totalW) * 0.5f;
+    float startX = ((float)kW - totalW) * 0.5f;
     return { startX + index * kKnobSpX, kKnobY };
-}
-
-juce::Rectangle<float> ReverseReverbAudioProcessorEditor::sliderRow(int index) const
-{
-    auto rp = rightPanel();
-    float topPad = 20.0f;   // generous top padding
-    float botPad = 20.0f;   // generous bottom padding
-    float available = rp.getHeight() - topPad - botPad;
-    float rowH = available / 3.0f;  // equal thirds with room to breathe
-    return { rp.getX(), rp.getY() + topPad + index * rowH, rp.getWidth(), rowH };
 }
 
 int ReverseReverbAudioProcessorEditor::knobHitTest(juce::Point<float> pos) const
 {
     for (int i = 0; i < kNumKnobs; ++i)
-        if (pos.getDistanceFrom(knobCenter(i)) <= kKnobR + 6.0f)
+        if (pos.getDistanceFrom(knobCenter(i)) <= kKnobR + 8.0f)
             return i;
     return -1;
 }
@@ -131,7 +108,7 @@ void ReverseReverbAudioProcessorEditor::mouseDown(const juce::MouseEvent& e)
 void ReverseReverbAudioProcessorEditor::mouseDrag(const juce::MouseEvent& e)
 {
     if (draggingKnob < 0) return;
-    float delta = (dragStartY - e.position.y) / 130.0f;
+    float delta = (dragStartY - e.position.y) / 140.0f;
     setNorm(draggingKnob, dragStartVal + delta);
     repaint();
 }
@@ -162,8 +139,7 @@ void ReverseReverbAudioProcessorEditor::mouseDoubleClick(const juce::MouseEvent&
 void ReverseReverbAudioProcessorEditor::paint(juce::Graphics& g)
 {
     drawChassis(g);
-    drawLeftPanel(g);
-    drawRightPanel(g);
+    drawPlugin(g);
     drawScrews(g);
     drawScanLines(g, getLocalBounds().toFloat(), 0.012f);
 }
@@ -174,7 +150,7 @@ void ReverseReverbAudioProcessorEditor::resized() {}
 void ReverseReverbAudioProcessorEditor::drawChassis(juce::Graphics& g)
 {
     auto b = getLocalBounds().toFloat();
-    g.setColour(cChassis);
+    g.setColour(cMetal);
     g.fillRect(b);
     g.setColour(juce::Colour(0xff333333));
     g.drawRect(b, 1.0f);
@@ -195,8 +171,8 @@ void ReverseReverbAudioProcessorEditor::drawScanLines(juce::Graphics& g,
 
 void ReverseReverbAudioProcessorEditor::drawScrews(juce::Graphics& g)
 {
-    const float inset = 7.0f, d = 11.0f, r = d * 0.5f;
-    float W = (float)getWidth(), H = (float)getHeight();
+    const float inset = 8.0f, d = 12.0f, r = d * 0.5f;
+    float W = (float)kW, H = (float)kH;
     juce::Point<float> corners[4] = {
         { inset + r, inset + r }, { W - inset - r, inset + r },
         { inset + r, H - inset - r }, { W - inset - r, H - inset - r }
@@ -219,63 +195,64 @@ void ReverseReverbAudioProcessorEditor::drawScrews(juce::Graphics& g)
 }
 
 //==============================================================================
-void ReverseReverbAudioProcessorEditor::drawLeftPanel(juce::Graphics& g)
+void ReverseReverbAudioProcessorEditor::drawPlugin(juce::Graphics& g)
 {
-    auto lp = leftPanel();
+    float W = (float)kW;
 
-    g.setColour(cMetal);
-    g.fillRect(lp);
-    drawScanLines(g, lp, 0.008f);
-
-    // Divider
-    float dx = lp.getRight();
-    g.setColour(juce::Colour(0xff0d0d0d));
-    g.drawLine(dx, 0, dx, (float)getHeight(), 2.0f);
-    g.setColour(juce::Colour(0xff3d3d3d));
-    g.drawLine(dx + 2, 0, dx + 2, (float)getHeight(), 1.0f);
-
-    // Module ID
+    // Module ID top-left
     g.setFont(shareTechMono.withHeight(8.0f));
     g.setColour(cTextDim);
-    g.drawText("01 / 04", 14, 20, 80, 12, juce::Justification::centredLeft);
+    g.drawText("01 / 04", 18, 20, 80, 12, juce::Justification::centredLeft);
 
-    // Plugin name — two lines, engraved, with generous space above knobs
-    float nameY = 45.0f;
-    g.setFont(rajdhaniBold.withHeight(22.0f));
+    // Plugin name centred near top
+    float nameY = 32.0f;
+    g.setFont(rajdhaniBold.withHeight(24.0f));
 
-    // Shadow
+    // Engraved shadow
     g.setColour(juce::Colours::black.withAlpha(0.6f));
-    g.drawText("REVERSE", lp.withY(nameY + 1.0f).withHeight(27.0f), juce::Justification::centred);
-    g.drawText("REVERB",  lp.withY(nameY + 29.0f).withHeight(27.0f), juce::Justification::centred);
+    g.drawText("REVERSE REVERB", 0, (int)nameY + 1, (int)W, 30, juce::Justification::centred);
     // Highlight
     g.setColour(juce::Colours::white.withAlpha(0.07f));
-    g.drawText("REVERSE", lp.withY(nameY - 1.0f).withHeight(27.0f), juce::Justification::centred);
-    g.drawText("REVERB",  lp.withY(nameY + 27.0f).withHeight(27.0f), juce::Justification::centred);
+    g.drawText("REVERSE REVERB", 0, (int)nameY - 1, (int)W, 30, juce::Justification::centred);
     // Main
     g.setColour(cSilk);
-    g.drawText("REVERSE", lp.withY(nameY).withHeight(27.0f), juce::Justification::centred);
-    g.drawText("REVERB",  lp.withY(nameY + 28.0f).withHeight(27.0f), juce::Justification::centred);
+    g.drawText("REVERSE REVERB", 0, (int)nameY, (int)W, 30, juce::Justification::centred);
 
-    // Knobs
-    const char* labels[3] = { "ROOM", "WET", "WINDOW" };
-    float vals[3] = { normRoom(), normWet(), normWindow() };
+    // Thin accent line under name
+    g.setColour(cBlue.withAlpha(0.4f));
+    g.drawLine(W * 0.25f, nameY + 33.0f, W * 0.75f, nameY + 33.0f, 1.0f);
+
+    // Three knobs
+    auto& rs = *audioProcessor.roomSize;
+    auto& wt = *audioProcessor.wetMix;
+    auto& ws = *audioProcessor.windowSizeMs;
+
+    struct KnobData { const char* label; float norm; juce::String val; };
+    KnobData knobs[3] = {
+        { "ROOM SIZE", normRoom(),   juce::String(rs.get(), 2) },
+        { "WET MIX",   normWet(),    juce::String(wt.get(), 2) },
+        { "WINDOW MS", normWindow(), juce::String((int)ws.get()) + " ms" }
+    };
+
     for (int i = 0; i < kNumKnobs; ++i)
     {
         auto c = knobCenter(i);
-        drawKnob(g, c.x, c.y, vals[i], labels[i]);
+        drawKnob(g, c.x, c.y, knobs[i].norm, knobs[i].label, knobs[i].val);
     }
 
-    // Category badge — well clear of the bottom edge
-    float badgeY = (float)getHeight() - 22.0f;
-    float badgeCX = lp.getCentreX();
+    // Category badge bottom-centre
+    float badgeY = (float)kH - 22.0f;
     float dotR = 3.0f;
+    float dotX = W * 0.5f - 32.0f;
+
     g.setColour(cBlue.withAlpha(0.4f));
-    g.fillEllipse(badgeCX - 30.0f - dotR - 2, badgeY - dotR - 2, (dotR + 2) * 2, (dotR + 2) * 2);
+    g.fillEllipse(dotX - dotR - 2, badgeY - dotR - 2, (dotR + 2) * 2, (dotR + 2) * 2);
     g.setColour(cBlue);
-    g.fillEllipse(badgeCX - 30.0f - dotR, badgeY - dotR, dotR * 2, dotR * 2);
+    g.fillEllipse(dotX - dotR, badgeY - dotR, dotR * 2, dotR * 2);
+
     g.setFont(shareTechMono.withHeight(8.0f));
     g.setColour(cTextDim);
-    g.drawText("SPATIAL", (int)(badgeCX - 22), (int)(badgeY - 5), 50, 10,
+    g.drawText("SPATIAL", (int)(dotX + 5), (int)(badgeY - 5), 50, 10,
                juce::Justification::centredLeft);
 }
 
@@ -283,25 +260,27 @@ void ReverseReverbAudioProcessorEditor::drawLeftPanel(juce::Graphics& g)
 void ReverseReverbAudioProcessorEditor::drawKnob(juce::Graphics& g,
                                                    float cx, float cy,
                                                    float value,
-                                                   const juce::String& label)
+                                                   const juce::String& label,
+                                                   const juce::String& valueText)
 {
     float r = kKnobR;
 
-    // Arc ring — sits outside the knob body with clear space
-    float arcR     = r + 5.0f;
+    float arcR     = r + 6.0f;
     float startAng = juce::MathConstants<float>::pi * 1.2f;
     float endAng   = juce::MathConstants<float>::pi * 2.8f;
     float valueAng = startAng + value * (endAng - startAng);
 
+    // Inactive arc
     juce::Path inactiveArc;
     inactiveArc.addArc(cx - arcR, cy - arcR, arcR * 2, arcR * 2, valueAng, endAng, true);
-    g.setColour(juce::Colour(0xff222222).withAlpha(0.4f));
-    g.strokePath(inactiveArc, juce::PathStrokeType(4.0f));
+    g.setColour(juce::Colour(0xff1a1a1a).withAlpha(0.8f));
+    g.strokePath(inactiveArc, juce::PathStrokeType(5.0f));
 
+    // Active arc
     juce::Path activeArc;
     activeArc.addArc(cx - arcR, cy - arcR, arcR * 2, arcR * 2, startAng, valueAng, true);
-    g.setColour(cBlue.withAlpha(0.5f));
-    g.strokePath(activeArc, juce::PathStrokeType(4.0f));
+    g.setColour(cBlue.withAlpha(0.7f));
+    g.strokePath(activeArc, juce::PathStrokeType(5.0f));
 
     // Knob body
     juce::ColourGradient bodyGrad(juce::Colour(0xff4a4a4a), cx - r*0.35f, cy - r*0.3f,
@@ -310,10 +289,12 @@ void ReverseReverbAudioProcessorEditor::drawKnob(juce::Graphics& g,
     g.setGradientFill(bodyGrad);
     g.fillEllipse(cx - r, cy - r, r * 2, r * 2);
 
+    // Shadow ring
     g.setColour(juce::Colours::black.withAlpha(0.8f));
-    g.drawEllipse(cx - r, cy - r, r * 2, r * 2, 1.2f);
+    g.drawEllipse(cx - r, cy - r, r * 2, r * 2, 1.5f);
+    // Top highlight
     g.setColour(juce::Colours::white.withAlpha(0.1f));
-    g.drawEllipse(cx - r + 1, cy - r + 1, r * 2 - 2, r * 2 - 2, 0.7f);
+    g.drawEllipse(cx - r + 1, cy - r + 1, r * 2 - 2, r * 2 - 2, 0.8f);
 
     // Pointer
     float angle = startAng + value * (endAng - startAng) - juce::MathConstants<float>::halfPi;
@@ -322,130 +303,20 @@ void ReverseReverbAudioProcessorEditor::drawKnob(juce::Graphics& g,
     float px2 = cx + std::cos(angle) * r * 0.78f;
     float py2 = cy + std::sin(angle) * r * 0.78f;
 
-    g.setColour(cBlue.withAlpha(0.8f));
-    g.drawLine(px1, py1, px2, py2, 3.0f);
+    g.setColour(cBlue.withAlpha(0.7f));
+    g.drawLine(px1, py1, px2, py2, 3.5f);
     g.setColour(cBlue);
-    g.drawLine(px1, py1, px2, py2, 1.8f);
+    g.drawLine(px1, py1, px2, py2, 2.0f);
 
-    // Label — clear space below arc
-    g.setFont(shareTechMono.withHeight(7.5f));
-    g.setColour(cSilk);
-    g.drawText(label, (int)(cx - 22), (int)(cy + arcR + 4), 44, 10,
-               juce::Justification::centred);
-}
-
-//==============================================================================
-void ReverseReverbAudioProcessorEditor::drawRightPanel(juce::Graphics& g)
-{
-    auto rp = rightPanel();
-    g.setColour(cPanel);
-    g.fillRect(rp);
-
-    auto& rs = *audioProcessor.roomSize;
-    auto& wt = *audioProcessor.wetMix;
-    auto& ws = *audioProcessor.windowSizeMs;
-
-    struct Row { juce::String label; float norm; juce::String val; };
-    Row rows[3] = {
-        { "ROOM SIZE", normRoom(),   juce::String(rs.get(), 2) },
-        { "WET MIX",   normWet(),    juce::String(wt.get(), 2) },
-        { "WINDOW MS", normWindow(), juce::String((int)ws.get()) + " ms" }
-    };
-
-    for (int i = 0; i < 3; ++i)
-        drawSliderRow(g, sliderRow(i), rows[i].label, rows[i].norm, rows[i].val, i % 2 != 0);
-
-    drawVUStrip(g);
-}
-
-//==============================================================================
-void ReverseReverbAudioProcessorEditor::drawSliderRow(juce::Graphics& g,
-                                                       juce::Rectangle<float> row,
-                                                       const juce::String& label,
-                                                       float value,
-                                                       const juce::String& valueText,
-                                                       bool odd)
-{
-    g.setColour(odd ? juce::Colour(0xff242424) : cPanel);
-    g.fillRect(row);
-    g.setColour(juce::Colour(0xff2a2a2a));
-    g.drawLine(row.getX(), row.getBottom(), row.getRight(), row.getBottom(), 1.0f);
-
-    float leftM  = row.getX() + 16.0f;
-    float rightM = row.getRight() - 26.0f;
-    float usableW = rightM - leftM;
-
-    // Label sits in upper portion of row with generous top margin
-    float labelY = row.getY() + row.getHeight() * 0.22f;
-    g.setFont(shareTechMono.withHeight(9.0f));
+    // Label above knob
+    g.setFont(shareTechMono.withHeight(8.0f));
     g.setColour(cAmber);
-    g.drawText(label, (int)leftM, (int)labelY, (int)(usableW * 0.65f), 12,
-               juce::Justification::centredLeft);
+    g.drawText(label, (int)(cx - 36), (int)(cy - arcR - 16), 72, 11,
+               juce::Justification::centred);
+
+    // Value readout below knob
+    g.setFont(shareTechMono.withHeight(8.5f));
     g.setColour(cSilk);
-    g.drawText(valueText, (int)leftM, (int)labelY, (int)usableW, 12,
-               juce::Justification::centredRight);
-
-    // Slider track sits in lower portion with generous bottom margin
-    float trackY  = row.getY() + row.getHeight() * 0.68f;
-    float trackH  = 4.0f;
-
-    g.setColour(juce::Colour(0xff1a1a1a));
-    g.fillRect(leftM, trackY - trackH * 0.5f, usableW, trackH);
-    g.setColour(juce::Colour(0xff222222));
-    g.drawRect(leftM, trackY - trackH * 0.5f, usableW, trackH, 1.0f);
-
-    float fillW = usableW * value;
-    g.setColour(cBlue);
-    g.fillRect(leftM, trackY - trackH * 0.5f, fillW, trackH);
-
-    // Thumb — taller than the track so it's easy to grab
-    float thumbW = 10.0f, thumbH = 20.0f;
-    float thumbX = leftM + fillW - thumbW * 0.5f;
-    float thumbY = trackY - thumbH * 0.5f;
-
-    juce::ColourGradient tg(juce::Colour(0xff4a4a4a), thumbX, thumbY,
-                            juce::Colour(0xff2a2a2a), thumbX, thumbY + thumbH, false);
-    g.setGradientFill(tg);
-    g.fillRoundedRectangle(thumbX, thumbY, thumbW, thumbH, 2.0f);
-    g.setColour(juce::Colour(0xff4a4a4a));
-    g.drawLine(thumbX, thumbY + 1, thumbX + thumbW, thumbY + 1, 1.0f);
-    g.setColour(juce::Colour(0xff0d0d0d));
-    g.drawLine(thumbX, thumbY + thumbH - 1, thumbX + thumbW, thumbY + thumbH - 1, 1.0f);
-    g.setColour(juce::Colours::black.withAlpha(0.6f));
-    g.drawRoundedRectangle(thumbX, thumbY, thumbW, thumbH, 2.0f, 1.0f);
-}
-
-//==============================================================================
-void ReverseReverbAudioProcessorEditor::drawVUStrip(juce::Graphics& g)
-{
-    auto rp = rightPanel();
-    int   segs   = 8;
-    float segH   = 4.0f;
-    float segGap = 3.0f;
-    float stripH = segs * (segH + segGap) - segGap;
-    float stripW = 6.0f;
-    float stripX = rp.getRight() - 12.0f - stripW;
-    float stripY = rp.getCentreY() - stripH * 0.5f;
-
-    for (int i = 0; i < segs; ++i)
-    {
-        float sy = stripY + (segs - 1 - i) * (segH + segGap);
-        bool active = i < 4;
-        if (active)
-        {
-            g.setColour(cGreen.withAlpha(0.35f));
-            g.fillRect(stripX - 1, sy - 1, stripW + 2, segH + 2);
-            g.setColour(cGreen.withAlpha(0.65f));
-            g.fillRect(stripX, sy, stripW, segH);
-            g.setColour(juce::Colour(0xff3aaf52).withAlpha(0.65f));
-            g.drawRect(stripX, sy, stripW, segH, 1.0f);
-        }
-        else
-        {
-            g.setColour(juce::Colour(0xff1a1a1a).withAlpha(0.6f));
-            g.fillRect(stripX, sy, stripW, segH);
-            g.setColour(juce::Colour(0xff222222).withAlpha(0.6f));
-            g.drawRect(stripX, sy, stripW, segH, 1.0f);
-        }
-    }
+    g.drawText(valueText, (int)(cx - 36), (int)(cy + arcR + 6), 72, 11,
+               juce::Justification::centred);
 }
