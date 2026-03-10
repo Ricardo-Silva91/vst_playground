@@ -12,7 +12,7 @@ static const juce::Colour cSilk     { 0xffa09890 };
 
 // Layout — single panel, 3 knobs centred with generous spacing
 static constexpr int   kW         = 400;
-static constexpr int   kH         = 280;
+static constexpr int   kH         = 310;
 static constexpr float kKnobR     = 28.0f;   // larger knobs since they're the only control
 static constexpr float kKnobSpX   = 110.0f;  // wide spacing so nothing crowds
 static constexpr float kKnobY     = 155.0f;  // vertically centred with room for name above
@@ -262,7 +262,7 @@ void ReverseReverbAudioProcessorEditor::drawPlugin(juce::Graphics& g)
     // black areas sink into the dark metal panel and only the bright wireframe shows.
     if (logoImage.isValid())
     {
-        const int logoSize = 56;
+        const int logoSize = 90;
         const int margin   = 10;
         int lx = (int)W - logoSize - margin;
         int ly = kH     - logoSize - margin;
