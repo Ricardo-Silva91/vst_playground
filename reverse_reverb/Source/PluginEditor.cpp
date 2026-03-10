@@ -30,8 +30,9 @@ ReverseReverbAudioProcessorEditor::ReverseReverbAudioProcessorEditor(ReverseReve
     shareTechMono = juce::Font(juce::FontOptions(
         juce::Typeface::createSystemTypefaceFor(BinaryData::ShareTechMonoRegular_ttf,
                                                 BinaryData::ShareTechMonoRegular_ttfSize)));
-    logoImage = juce::ImageCache::getFromMemory(BinaryData::logo_transparent_svg,
-                                                BinaryData::logo_transparent_svgSize);
+    logoDrawable = juce::Drawable::createFromImageData(
+        BinaryData::logo_transparent_svg,
+        BinaryData::logo_transparent_svgSize);
     startTimerHz(30);
 }
 
@@ -257,16 +258,17 @@ void ReverseReverbAudioProcessorEditor::drawPlugin(juce::Graphics& g)
     g.drawText("SPATIAL", (int)(dotX + 5), (int)(badgeY - 5), 50, 10,
                juce::Justification::centredLeft);
 
-    // Logo — bottom-right corner, drawn directly at full opacity
-    if (logoImage.isValid())
+    // Logo — bottom-right corner, rendered from SVG at full crispness
+    if (logoDrawable != nullptr)
     {
         const int logoSize = 140;
         const int margin   = 14;
-        g.drawImage(logoImage,
-                    (int)W - logoSize - margin,
-                    kH     - logoSize - margin,
-                    logoSize, logoSize,
-                    0, 0, logoImage.getWidth(), logoImage.getHeight());
+        juce::Rectangle<float> bounds(
+            W - logoSize - margin,
+            kH - logoSize - margin,
+            logoSize, logoSize);
+        logoDrawable->drawWithin(g, bounds,
+                                 juce::RectanglePlacement::centred, 1.0f);
     }
 }
 

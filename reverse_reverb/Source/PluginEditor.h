@@ -19,7 +19,7 @@ private:
 
     juce::Font  rajdhaniBold;
     juce::Font  shareTechMono;
-    juce::Image logoImage;
+    std::unique_ptr<juce::Drawable> logoDrawable;
 
     float roomVal   = 0.0f;
     float wetVal    = 0.0f;
