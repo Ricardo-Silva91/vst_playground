@@ -32,6 +32,26 @@ ReverseReverbAudioProcessorEditor::ReverseReverbAudioProcessorEditor(ReverseReve
                                                 BinaryData::ShareTechMonoRegular_ttfSize)));
     logoImage = juce::ImageCache::getFromMemory(BinaryData::logo_transparent_png,
                                                 BinaryData::logo_transparent_pngSize);
+
+    // The PNG has a black background — convert dark pixels to transparent so the
+    // wireframe lines render cleanly against the panel without blurry blending.
+    if (logoImage.isValid())
+    {
+        logoImage = logoImage.createCopy();
+        for (int y = 0; y < logoImage.getHeight(); ++y)
+        {
+            for (int x = 0; x < logoImage.getWidth(); ++x)
+            {
+                juce::Colour c = logoImage.getPixelAt(x, y);
+                // Brightness: pixels darker than threshold become fully transparent
+                float brightness = c.getBrightness();
+                if (brightness < 0.15f)
+                    logoImage.setPixelAt(x, y, juce::Colours::transparentBlack);
+                else
+                    logoImage.setPixelAt(x, y, c.withAlpha(brightness));
+            }
+        }
+    }
     startTimerHz(30);
 }
 
@@ -267,7 +287,7 @@ void ReverseReverbAudioProcessorEditor::drawPlugin(juce::Graphics& g)
         int lx = (int)W - logoSize - margin;
         int ly = kH     - logoSize - margin;
 
-        g.setOpacity(0.45f);
+        g.setOpacity(0.85f);
         g.drawImage(logoImage, lx, ly, logoSize, logoSize,
                     0, 0, logoImage.getWidth(), logoImage.getHeight());
         g.setOpacity(1.0f);
