@@ -1,65 +1,56 @@
 #pragma once
-
 #include <juce_audio_processors/juce_audio_processors.h>
+#include <juce_gui_basics/juce_gui_basics.h>
 #include "PluginProcessor.h"
 
 class ThroughTheWallAudioProcessorEditor : public juce::AudioProcessorEditor,
                                            private juce::Timer
 {
 public:
-    explicit ThroughTheWallAudioProcessorEditor(ThroughTheWallAudioProcessor&);
+    ThroughTheWallAudioProcessorEditor(ThroughTheWallAudioProcessor&);
     ~ThroughTheWallAudioProcessorEditor() override;
 
     void paint(juce::Graphics&) override;
     void resized() override;
-
-private:
     void timerCallback() override;
 
+private:
     ThroughTheWallAudioProcessor& audioProcessor;
 
-    // ── Colours (spec) ────────────────────────────────────────────────────
-    const juce::Colour kChassis { 0xff141414 };
-    const juce::Colour kPanel   { 0xff1c1c1c };
-    const juce::Colour kMetal   { 0xff2e2e2e };
-    const juce::Colour kAccent  { 0xff4ecf6a };
-    const juce::Colour kAmber   { 0xffe8820a };
-    const juce::Colour kSilk    { 0xffa09890 };
-    const juce::Colour kTextDim { 0xff7a746c };
-    const juce::Colour kText    { 0xffd4cfc8 };
+    juce::Font  rajdhaniBold;
+    juce::Font  shareTechMono;
+    std::unique_ptr<juce::Drawable> logoDrawable;
 
-    static constexpr int kFaceW   = 160;
-    static constexpr int kEditorW = 540;
-    static constexpr int kEditorH = 300;
+    // Cached norm values for dirty-check repaints
+    float thicknessVal = 0.0f;
+    float bleedVal     = 0.0f;
+    float rattleVal    = 0.0f;
+    float distanceVal  = 0.0f;
 
-    // ── Logo ──────────────────────────────────────────────────────────────
-    juce::Image logoImage;
+    int   draggingKnob = -1;
+    float dragStartY   = 0.0f;
+    float dragStartVal = 0.0f;
 
-    // ── Knobs (face panel 2x2) ────────────────────────────────────────────
-    juce::Slider thicknessKnob, bleedKnob, rattleKnob, distanceKnob;
+    void mouseDown       (const juce::MouseEvent&) override;
+    void mouseDrag       (const juce::MouseEvent&) override;
+    void mouseUp         (const juce::MouseEvent&) override;
+    void mouseDoubleClick(const juce::MouseEvent&) override;
 
-    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>
-        thicknessAttach, bleedAttach, rattleAttach, distanceAttach;
+    void drawChassis  (juce::Graphics&);
+    void drawScrews   (juce::Graphics&);
+    void drawPlugin   (juce::Graphics&);
+    void drawKnob     (juce::Graphics&, float cx, float cy, float value,
+                       const juce::String& label, const juce::String& valueText);
+    void drawScanLines(juce::Graphics&, juce::Rectangle<float> area, float opacity);
 
-    // ── Sliders (content panel rows) ──────────────────────────────────────
-    juce::Slider thicknessSlider, bleedSlider, rattleSlider, distanceSlider;
+    juce::Point<float> knobCenter (int index) const;
+    int                knobHitTest(juce::Point<float>) const;
 
-    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>
-        thicknessSliderAttach, bleedSliderAttach, rattleSliderAttach, distanceSliderAttach;
-
-    // ── Paint helpers ─────────────────────────────────────────────────────
-    void paintChassis     (juce::Graphics&);
-    void paintFacePanel   (juce::Graphics&);
-    void paintKnob        (juce::Graphics&, juce::Rectangle<float> bounds,
-                           float normVal, const juce::String& label);
-    void paintContentPanel(juce::Graphics&);
-    void paintParamRow    (juce::Graphics&, juce::Rectangle<int> row,
-                           const juce::String& label, float normVal, bool shaded);
-    void paintVUStrip     (juce::Graphics&);
-    void paintScrew       (juce::Graphics&, float cx, float cy);
-    void paintLogo        (juce::Graphics&);
-
-    float getNormValue(const juce::String& paramId) const;
+    float normThickness() const;
+    float normBleed()     const;
+    float normRattle()    const;
+    float normDistance()  const;
+    void  setNorm(int knobIndex, float normVal);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ThroughTheWallAudioProcessorEditor)
 };

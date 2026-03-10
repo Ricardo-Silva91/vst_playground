@@ -5,6 +5,13 @@ set(CMAKE_CXX_STANDARD 17)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../JUCE JUCE_build)
 
+juce_add_binary_data(ThroughTheWallData
+    SOURCES
+        ${CMAKE_CURRENT_SOURCE_DIR}/fonts/Rajdhani-Bold.ttf
+        ${CMAKE_CURRENT_SOURCE_DIR}/fonts/ShareTechMono-Regular.ttf
+        ${CMAKE_CURRENT_SOURCE_DIR}/logo_transparent.svg
+)
+
 juce_add_plugin(through_the_wall
     PLUGIN_MANUFACTURER_CODE Anth
     PLUGIN_CODE TtWl
@@ -16,24 +23,16 @@ juce_add_plugin(through_the_wall
     NEEDS_MIDI_OUTPUT FALSE
     IS_MIDI_EFFECT FALSE
     EDITOR_WANTS_KEYBOARD_FOCUS FALSE
+    COPY_PLUGIN_AFTER_BUILD FALSE
     VST3_CATEGORIES "Fx" "Spatial"
-)
-
-juce_add_binary_data(ThroughTheWallData
-    SOURCES logo_transparent.png
 )
 
 target_sources(through_the_wall
     PRIVATE
         Source/PluginProcessor.cpp
+        Source/PluginProcessor.h
         Source/PluginEditor.cpp
-)
-
-target_compile_definitions(through_the_wall
-    PUBLIC
-        JUCE_WEB_BROWSER=0
-        JUCE_USE_CURL=0
-        JUCE_VST3_CAN_REPLACE_VST2=0
+        Source/PluginEditor.h
 )
 
 target_link_libraries(through_the_wall
@@ -45,4 +44,11 @@ target_link_libraries(through_the_wall
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags
         juce::juce_recommended_warning_flags
+)
+
+target_compile_definitions(through_the_wall
+    PUBLIC
+        JUCE_WEB_BROWSER=0
+        JUCE_USE_CURL=0
+        JUCE_VST3_CAN_REPLACE_VST2=0
 )
