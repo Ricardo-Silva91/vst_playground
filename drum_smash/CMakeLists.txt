@@ -5,6 +5,13 @@ set(CMAKE_CXX_STANDARD 17)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../JUCE JUCE_build)
 
+juce_add_binary_data(DrumSmashData
+    SOURCES
+        ${CMAKE_CURRENT_SOURCE_DIR}/fonts/Rajdhani-Bold.ttf
+        ${CMAKE_CURRENT_SOURCE_DIR}/fonts/ShareTechMono-Regular.ttf
+        ${CMAKE_CURRENT_SOURCE_DIR}/logo_transparent.svg
+)
+
 juce_add_plugin(drum_smash
     PLUGIN_MANUFACTURER_CODE Anth
     PLUGIN_CODE Dsms
@@ -33,6 +40,7 @@ target_compile_definitions(drum_smash PUBLIC
 )
 
 target_link_libraries(drum_smash PRIVATE
+    DrumSmashData
     juce::juce_audio_utils
     juce::juce_dsp
     PUBLIC

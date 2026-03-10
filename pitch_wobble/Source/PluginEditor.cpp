@@ -1,42 +1,54 @@
 #include "PluginEditor.h"
-#include "PluginProcessor.h"
+#include <BinaryData.h>
 
 //==============================================================================
-static float normToAngle (float norm)
-{
-    // -145° (min) to +145° (max), measured clockwise from 12 o'clock
-    return juce::degreesToRadians (-145.0f + norm * 290.0f);
-}
+// Colours — amber accent from spec, same chassis/metal/silk as reverse_reverb
+static const juce::Colour cChassis { 0xff141414 };
+static const juce::Colour cMetal   { 0xff2e2e2e };
+static const juce::Colour cEdge    { 0xff0a0a0a };
+static const juce::Colour cAmber   { 0xffe8820a };  // accent — replaces blue
+static const juce::Colour cTextDim { 0xff7a746c };
+static const juce::Colour cSilk    { 0xffa09890 };
+
+// Layout
+static constexpr int   kW        = 480;
+static constexpr int   kH        = 280;
+static constexpr float kKnobR    = 32.0f;
+static constexpr float kKnobSpX  = 130.0f;
+static constexpr float kKnobY    = 150.0f;
+static constexpr int   kNumKnobs = 3;
 
 //==============================================================================
 PitchWobbleEditor::PitchWobbleEditor (PitchWobbleProcessor& p)
     : AudioProcessorEditor (&p), proc (p)
 {
-    knobs[0] = { "depth",  "DEPTH",  "ct", 0.0f };
-    knobs[1] = { "rate",   "RATE",   "Hz", 0.0f };
-    knobs[2] = { "smooth", "SMOOTH", "",   0.0f };
+    setSize (kW, kH);
 
-    for (auto& k : knobs)
-    {
-        if (auto* param = proc.apvts.getParameter (k.paramId))
-            k.value = param->getValue();
-        proc.apvts.addParameterListener (k.paramId, this);
-    }
+    rajdhaniBold = juce::Font (juce::FontOptions (
+        juce::Typeface::createSystemTypefaceFor (
+            BinaryData::RajdhaniBold_ttf,
+            BinaryData::RajdhaniBold_ttfSize)));
 
-    // Ghost sliders — invisible, no mouse interaction, purely for FL Studio
-    // to find parameters and attach automation clips via right-click.
-    auto setupGhost = [](juce::Slider& s)
+    shareTechMono = juce::Font (juce::FontOptions (
+        juce::Typeface::createSystemTypefaceFor (
+            BinaryData::ShareTechMonoRegular_ttf,
+            BinaryData::ShareTechMonoRegular_ttfSize)));
+
+    logoDrawable = juce::Drawable::createFromImageData (
+        BinaryData::logo_transparent_svg,
+        BinaryData::logo_transparent_svgSize);
+
+    // Ghost sliders for FL Studio automation — invisible, no mouse interception
+    auto setupGhost = [] (juce::Slider& s)
     {
         s.setSliderStyle (juce::Slider::LinearHorizontal);
         s.setTextBoxStyle (juce::Slider::NoTextBox, true, 0, 0);
         s.setInterceptsMouseClicks (false, false);
         s.setAlpha (0.0f);
     };
-
     setupGhost (ghostDepth);
     setupGhost (ghostRate);
     setupGhost (ghostSmooth);
-
     addAndMakeVisible (ghostDepth);
     addAndMakeVisible (ghostRate);
     addAndMakeVisible (ghostSmooth);
@@ -48,312 +60,336 @@ PitchWobbleEditor::PitchWobbleEditor (PitchWobbleProcessor& p)
     attachSmooth = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>
                        (proc.apvts, "smooth", ghostSmooth);
 
-    setSize (W, H);
+    startTimerHz (30);
 }
 
-PitchWobbleEditor::~PitchWobbleEditor()
+PitchWobbleEditor::~PitchWobbleEditor() { stopTimer(); }
+
+//==============================================================================
+void PitchWobbleEditor::timerCallback()
 {
-    for (auto& k : knobs)
-        proc.apvts.removeParameterListener (k.paramId, this);
+    float d = normDepth(), r = normRate(), s = normSmooth();
+    if (d != cachedDepth || r != cachedRate || s != cachedSmooth)
+    {
+        cachedDepth = d; cachedRate = r; cachedSmooth = s;
+        repaint();
+    }
 }
 
 //==============================================================================
-void PitchWobbleEditor::parameterChanged (const juce::String& paramId, float)
+// Layout
+//==============================================================================
+juce::Point<float> PitchWobbleEditor::knobCenter (int index) const
 {
-    juce::MessageManager::callAsync ([this, paramId]
-    {
-        for (auto& k : knobs)
-            if (k.paramId == paramId)
-                if (auto* param = proc.apvts.getParameter (paramId))
-                    k.value = param->getValue();
-        repaint();
-    });
+    float totalW = kKnobSpX * (kNumKnobs - 1);
+    float startX = ((float)kW - totalW) * 0.5f;
+    return { startX + index * kKnobSpX, kKnobY };
 }
 
-// Ghost sliders are positioned exactly over each knob so FL Studio's
-// right-click hit-test lands on them. They are fully transparent.
-void PitchWobbleEditor::resized()
+int PitchWobbleEditor::knobHitTest (juce::Point<float> pos) const
 {
-    ghostDepth .setBounds (knobBounds (0).toNearestInt());
-    ghostRate  .setBounds (knobBounds (1).toNearestInt());
-    ghostSmooth.setBounds (knobBounds (2).toNearestInt());
-}
-
-
-
-juce::Rectangle<float> PitchWobbleEditor::knobBounds (int i) const
-{
-    // Three knobs evenly spaced across full width, vertically centred
-    // with a slight downward offset to leave room for header
-    float slotW = (float)W / 3.0f;
-    float cx    = slotW * i + slotW / 2.0f;
-    float cy    = (float)H / 2.0f + 20.0f;   // nudged down for header
-    return { cx - KNOB_D / 2.0f, cy - KNOB_D / 2.0f, KNOB_D, KNOB_D };
-}
-
-int PitchWobbleEditor::hitTestKnob (juce::Point<int> pos) const
-{
-    for (int i = 0; i < 3; ++i)
-        if (knobBounds (i).expanded (8.0f).contains (pos.toFloat()))
+    for (int i = 0; i < kNumKnobs; ++i)
+        if (pos.getDistanceFrom (knobCenter (i)) <= kKnobR + 8.0f)
             return i;
     return -1;
 }
 
-void PitchWobbleEditor::setNorm (int index, float norm)
+void PitchWobbleEditor::resized()
+{
+    // Position ghost sliders over each knob for right-click automation access
+    for (int i = 0; i < kNumKnobs; ++i)
+    {
+        auto c = knobCenter (i);
+        juce::Rectangle<int> r ((int)(c.x - kKnobR), (int)(c.y - kKnobR),
+                                 (int)(kKnobR * 2),   (int)(kKnobR * 2));
+        if (i == 0) ghostDepth .setBounds (r);
+        if (i == 1) ghostRate  .setBounds (r);
+        if (i == 2) ghostSmooth.setBounds (r);
+    }
+}
+
+//==============================================================================
+// Param helpers
+//==============================================================================
+float PitchWobbleEditor::normDepth() const
+{
+    auto* p = dynamic_cast<juce::RangedAudioParameter*> (proc.apvts.getParameter ("depth"));
+    return p ? p->getValue() : 0.0f;
+}
+float PitchWobbleEditor::normRate() const
+{
+    auto* p = dynamic_cast<juce::RangedAudioParameter*> (proc.apvts.getParameter ("rate"));
+    return p ? p->getValue() : 0.0f;
+}
+float PitchWobbleEditor::normSmooth() const
+{
+    auto* p = dynamic_cast<juce::RangedAudioParameter*> (proc.apvts.getParameter ("smooth"));
+    return p ? p->getValue() : 0.0f;
+}
+
+void PitchWobbleEditor::setNorm (int idx, float norm)
 {
     norm = juce::jlimit (0.0f, 1.0f, norm);
-    knobs[index].value = norm;
-    if (auto* param = proc.apvts.getParameter (knobs[index].paramId))
-        param->setValueNotifyingHost (norm);
-    repaint();
+    const char* ids[] = { "depth", "rate", "smooth" };
+    if (idx < 0 || idx >= kNumKnobs) return;
+    if (auto* p = proc.apvts.getParameter (ids[idx]))
+        p->setValueNotifyingHost (norm);
+}
+
+juce::String PitchWobbleEditor::formatValue (int idx) const
+{
+    auto* p = dynamic_cast<juce::RangedAudioParameter*> (
+        proc.apvts.getParameter (idx == 0 ? "depth" : idx == 1 ? "rate" : "smooth"));
+    if (!p) return {};
+    float v = p->convertFrom0to1 (p->getValue());
+    if (idx == 0) return juce::String (v, 1) + " ct";
+    if (idx == 1) return juce::String (v, 2) + " Hz";
+    return juce::String (v, 2);
 }
 
 //==============================================================================
 // Mouse
 //==============================================================================
-
 void PitchWobbleEditor::mouseDown (const juce::MouseEvent& e)
 {
-    int idx = hitTestKnob (e.getPosition());
-    if (idx < 0) return;
-    knobs[idx].isDragging = true;
-    knobs[idx].dragStart  = knobs[idx].value;
-    knobs[idx].dragStartY = e.getPosition().y;
+    int k = knobHitTest (e.position);
+    if (k >= 0)
+    {
+        draggingKnob = k;
+        dragStartY   = e.position.y;
+        dragStartVal = (k == 0) ? normDepth() : (k == 1) ? normRate() : normSmooth();
+    }
 }
 
 void PitchWobbleEditor::mouseDrag (const juce::MouseEvent& e)
 {
-    for (int i = 0; i < 3; ++i)
-    {
-        if (!knobs[i].isDragging) continue;
-        float delta = (knobs[i].dragStartY - e.getPosition().y) / 200.0f;
-        setNorm (i, knobs[i].dragStart + delta);
-    }
+    if (draggingKnob < 0) return;
+    float delta = (dragStartY - e.position.y) / 140.0f;
+    setNorm (draggingKnob, dragStartVal + delta);
+    repaint();
 }
 
-void PitchWobbleEditor::mouseUp (const juce::MouseEvent&)
-{
-    for (auto& k : knobs) k.isDragging = false;
-}
+void PitchWobbleEditor::mouseUp (const juce::MouseEvent&) { draggingKnob = -1; }
 
-void PitchWobbleEditor::mouseWheelMove (const juce::MouseEvent& e,
-                                         const juce::MouseWheelDetails& w)
+void PitchWobbleEditor::mouseDoubleClick (const juce::MouseEvent& e)
 {
-    int idx = hitTestKnob (e.getPosition());
-    if (idx < 0) return;
-    setNorm (idx, knobs[idx].value + w.deltaY * 0.05f);
+    int k = knobHitTest (e.position);
+    if (k < 0) return;
+
+    const char* ids[] = { "depth", "rate", "smooth" };
+    auto* param = dynamic_cast<juce::RangedAudioParameter*> (
+                      proc.apvts.getParameter (ids[k]));
+    if (!param) return;
+
+    float current = param->convertFrom0to1 (param->getValue());
+    auto* box = new juce::AlertWindow ("Enter value",
+                                       param->getName (64),
+                                       juce::MessageBoxIconType::NoIcon);
+    box->addTextEditor ("val", juce::String (current));
+    box->addButton ("OK", 1);
+    box->addButton ("Cancel", 0);
+    box->enterModalState (true,
+        juce::ModalCallbackFunction::create ([box, param] (int result)
+        {
+            if (result == 1)
+            {
+                float v = box->getTextEditorContents ("val").getFloatValue();
+                param->setValueNotifyingHost (param->convertTo0to1 (
+                    juce::jlimit (param->getNormalisableRange().start,
+                                  param->getNormalisableRange().end, v)));
+            }
+        }), true);
 }
 
 //==============================================================================
 // Paint
 //==============================================================================
-
 void PitchWobbleEditor::paint (juce::Graphics& g)
 {
-    drawBackground (g);
-    drawHeader     (g);
-    for (int i = 0; i < 3; ++i)
-        drawKnob (g, i);
+    drawChassis   (g);
+    drawPlugin    (g);
+    drawScrews    (g);
+    drawScanLines (g, getLocalBounds().toFloat(), 0.012f);
+}
 
-    // Corner screws
-    drawScrew (g, 14.0f,       14.0f);
-    drawScrew (g, W - 14.0f,   14.0f);
-    drawScrew (g, 14.0f,       H - 14.0f);
-    drawScrew (g, W - 14.0f,   H - 14.0f);
+//──────────────────────────────────────────────────────────────────────────────
+void PitchWobbleEditor::drawChassis (juce::Graphics& g)
+{
+    auto b = getLocalBounds().toFloat();
+    g.setColour (cMetal);
+    g.fillRect (b);
+    g.setColour (juce::Colour (0xff333333));
+    g.drawRect (b, 1.0f);
+    g.setColour (juce::Colour (0xff444444));
+    g.drawLine (b.getX(), b.getY(), b.getRight(), b.getY(), 2.0f);
+    g.setColour (cEdge);
+    g.drawLine (b.getX(), b.getBottom(), b.getRight(), b.getBottom(), 2.0f);
+}
+
+//──────────────────────────────────────────────────────────────────────────────
+void PitchWobbleEditor::drawScanLines (juce::Graphics& g,
+                                        juce::Rectangle<float> area,
+                                        float opacity)
+{
+    g.setColour (juce::Colours::white.withAlpha (opacity));
+    for (float y = area.getY(); y < area.getBottom(); y += 2.0f)
+        g.drawHorizontalLine ((int)y, area.getX(), area.getRight());
+}
+
+//──────────────────────────────────────────────────────────────────────────────
+void PitchWobbleEditor::drawScrews (juce::Graphics& g)
+{
+    const float inset = 8.0f, d = 12.0f, r = d * 0.5f;
+    float W = (float)kW, H = (float)kH;
+    juce::Point<float> corners[4] = {
+        { inset + r, inset + r }, { W - inset - r, inset + r },
+        { inset + r, H - inset - r }, { W - inset - r, H - inset - r }
+    };
+    for (auto& c : corners)
+    {
+        juce::ColourGradient grad (juce::Colour (0xff3a3a3a), c.x - r*0.4f, c.y - r*0.35f,
+                                   juce::Colour (0xff111111), c.x + r, c.y + r, true);
+        g.setGradientFill (grad);
+        g.fillEllipse (c.x - r, c.y - r, d, d);
+        g.setColour (juce::Colours::black.withAlpha (0.8f));
+        g.drawEllipse (c.x - r, c.y - r, d, d, 1.0f);
+        g.setColour (juce::Colours::white.withAlpha (0.08f));
+        g.drawEllipse (c.x - r + 1, c.y - r + 1, d - 2, d - 2, 0.8f);
+        float s = r - 2.0f;
+        g.setColour (juce::Colours::black.withAlpha (0.7f));
+        g.drawLine (c.x - s, c.y, c.x + s, c.y, 1.5f);
+        g.drawLine (c.x, c.y - s, c.x, c.y + s, 1.5f);
+    }
+}
+
+//──────────────────────────────────────────────────────────────────────────────
+void PitchWobbleEditor::drawPlugin (juce::Graphics& g)
+{
+    float W = (float)kW;
+
+    // Module ID top-left
+    g.setFont (shareTechMono.withHeight (8.0f));
+    g.setColour (cTextDim);
+    g.drawText ("02 / 04", 18, 20, 80, 12, juce::Justification::centredLeft);
+
+    // Plugin name centred near top — same engraved treatment as reverse_reverb
+    float nameY = 30.0f;
+    g.setFont (rajdhaniBold.withHeight (22.0f));
+
+    g.setColour (juce::Colours::black.withAlpha (0.6f));
+    g.drawText ("PITCH WOBBLE", 0, (int)nameY + 1, (int)W, 28, juce::Justification::centred);
+    g.setColour (juce::Colours::white.withAlpha (0.07f));
+    g.drawText ("PITCH WOBBLE", 0, (int)nameY - 1, (int)W, 28, juce::Justification::centred);
+    g.setColour (cSilk);
+    g.drawText ("PITCH WOBBLE", 0, (int)nameY, (int)W, 28, juce::Justification::centred);
+
+    // Thin amber accent line under name
+    g.setColour (cAmber.withAlpha (0.4f));
+    g.drawLine (W * 0.25f, nameY + 31.0f, W * 0.75f, nameY + 31.0f, 1.0f);
+
+    // Three knobs
+    const char* labels[] = { "DEPTH", "RATE", "SMOOTH" };
+    float norms[] = { normDepth(), normRate(), normSmooth() };
+
+    for (int i = 0; i < kNumKnobs; ++i)
+    {
+        auto c = knobCenter (i);
+        drawKnob (g, c.x, c.y, norms[i], labels[i], formatValue (i));
+    }
 
     // Category badge bottom-centre
+    float badgeY = (float)kH - 22.0f;
+    float dotR   = 3.0f;
+    float dotX   = W * 0.5f - 36.0f;
+
+    // LED glow
+    g.setColour (cAmber.withAlpha (0.35f));
+    g.fillEllipse (dotX - dotR - 2, badgeY - dotR - 2, (dotR + 2) * 2, (dotR + 2) * 2);
+    // LED dot
+    g.setColour (cAmber);
+    g.fillEllipse (dotX - dotR, badgeY - dotR, dotR * 2, dotR * 2);
+
+    g.setFont (shareTechMono.withHeight (8.0f));
+    g.setColour (cTextDim);
+    g.drawText ("MODULATION", (int)(dotX + 6), (int)(badgeY - 5), 70, 10,
+                juce::Justification::centredLeft);
+
+    // Logo — bottom-right, same size and placement as reverse_reverb
+    if (logoDrawable != nullptr)
     {
-        float badgeCX = W / 2.0f;
-        float badgeY  = H - 22.0f;
-        float ledR    = 3.0f;
-        float ledX    = badgeCX - 38.0f;
-
-        // LED glow
-        juce::ColourGradient glow (accent.withAlpha (0.35f), ledX, badgeY,
-                                   juce::Colours::transparentBlack, ledX + 10, badgeY + 10, true);
-        g.setGradientFill (glow);
-        g.fillEllipse (ledX - 5, badgeY - 5, 16.0f, 16.0f);
-
-        // LED dot
-        g.setColour (accent);
-        g.fillEllipse (ledX - ledR, badgeY - ledR, ledR * 2, ledR * 2);
-
-        // Label
-        g.setColour (textDim);
-        g.setFont (8.0f);
-        g.drawText ("SPATIAL", (int)(ledX + 6), (int)(badgeY - 6),
-                    80, 12, juce::Justification::left, false);
+        const int logoSize = 80;
+        const int margin   = 14;
+        juce::Rectangle<float> bounds (
+            W - logoSize - margin,
+            kH - logoSize - margin,
+            logoSize, logoSize);
+        logoDrawable->drawWithin (g, bounds,
+                                  juce::RectanglePlacement::centred, 0.4f);
     }
 }
 
 //──────────────────────────────────────────────────────────────────────────────
-void PitchWobbleEditor::drawBackground (juce::Graphics& g) const
+void PitchWobbleEditor::drawKnob (juce::Graphics& g,
+                                   float cx, float cy, float value,
+                                   const juce::String& label,
+                                   const juce::String& valueText)
 {
-    // Main fill
-    g.setColour (chassis);
-    g.fillRect (getLocalBounds());
+    float r = kKnobR;
 
-    // Subtle inner vignette — darken edges
-    {
-        juce::ColourGradient vignette (juce::Colours::transparentBlack, W / 2.0f, H / 2.0f,
-                                       juce::Colour (0x55000000), 0.0f, 0.0f, true);
-        g.setGradientFill (vignette);
-        g.fillRect (getLocalBounds());
-    }
+    float arcR     = r + 6.0f;
+    float startAng = juce::MathConstants<float>::pi * 1.2f;
+    float endAng   = juce::MathConstants<float>::pi * 2.8f;
+    float valueAng = startAng + value * (endAng - startAng);
 
-    // Outer border
-    g.setColour (juce::Colour (0xff2a2a3e));
-    g.drawRect (getLocalBounds(), 1);
+    // Inactive arc
+    juce::Path inactiveArc;
+    inactiveArc.addArc (cx - arcR, cy - arcR, arcR * 2, arcR * 2, valueAng, endAng, true);
+    g.setColour (juce::Colour (0xff1a1a1a).withAlpha (0.8f));
+    g.strokePath (inactiveArc, juce::PathStrokeType (5.0f));
 
-    // Thin accent line under header
-    g.setColour (accent.withAlpha (0.35f));
-    g.fillRect (40.0f, 52.0f, (float)W - 80.0f, 1.0f);
-}
+    // Active arc — amber instead of blue
+    juce::Path activeArc;
+    activeArc.addArc (cx - arcR, cy - arcR, arcR * 2, arcR * 2, startAng, valueAng, true);
+    g.setColour (cAmber.withAlpha (0.7f));
+    g.strokePath (activeArc, juce::PathStrokeType (5.0f));
 
-//──────────────────────────────────────────────────────────────────────────────
-void PitchWobbleEditor::drawHeader (juce::Graphics& g) const
-{
-    // Module ID top-left
-    g.setColour (textDim);
-    g.setFont (8.0f);
-    g.drawText ("01 / 04", 14, 12, 60, 10, juce::Justification::left, false);
+    // Knob body — same gradient recipe as reverse_reverb
+    juce::ColourGradient bodyGrad (juce::Colour (0xff4a4a4a), cx - r*0.35f, cy - r*0.3f,
+                                   juce::Colour (0xff111111), cx + r, cy + r, true);
+    bodyGrad.addColour (0.45, juce::Colour (0xff2a2a2a));
+    g.setGradientFill (bodyGrad);
+    g.fillEllipse (cx - r, cy - r, r * 2, r * 2);
 
-    // Plugin title centred
-    g.setColour (juce::Colours::white);
-    g.setFont (juce::Font (20.0f, juce::Font::bold));
-    g.drawText ("PITCH WOBBLE", 0, 22, W, 24, juce::Justification::centred, false);
-}
+    // Shadow ring
+    g.setColour (juce::Colours::black.withAlpha (0.8f));
+    g.drawEllipse (cx - r, cy - r, r * 2, r * 2, 1.5f);
+    // Top highlight
+    g.setColour (juce::Colours::white.withAlpha (0.1f));
+    g.drawEllipse (cx - r + 1, cy - r + 1, r * 2 - 2, r * 2 - 2, 0.8f);
 
-//──────────────────────────────────────────────────────────────────────────────
-void PitchWobbleEditor::drawKnob (juce::Graphics& g, int index) const
-{
-    auto  b    = knobBounds (index);
-    float cx   = b.getCentreX();
-    float cy   = b.getCentreY();
-    float r    = KNOB_D / 2.0f;
-    float norm = knobs[index].value;
+    // Pointer — amber
+    float angle = startAng + value * (endAng - startAng) - juce::MathConstants<float>::halfPi;
+    float px1 = cx + std::cos (angle) * r * 0.25f;
+    float py1 = cy + std::sin (angle) * r * 0.25f;
+    float px2 = cx + std::cos (angle) * r * 0.78f;
+    float py2 = cy + std::sin (angle) * r * 0.78f;
 
-    // ── arc track ────────────────────────────────────────────────────────────
-    float arcR      = r + 8.0f;
-    float startDeg  = -145.0f;
-    float endDeg    = 145.0f;
-    float valueDeg  = startDeg + norm * (endDeg - startDeg);
+    g.setColour (cAmber.withAlpha (0.7f));
+    g.drawLine (px1, py1, px2, py2, 3.5f);
+    g.setColour (cAmber);
+    g.drawLine (px1, py1, px2, py2, 2.0f);
 
-    // background track
-    {
-        juce::Path track;
-        track.addCentredArc (cx, cy, arcR, arcR, 0.0f,
-                             juce::degreesToRadians (startDeg),
-                             juce::degreesToRadians (endDeg), true);
-        g.setColour (juce::Colour (0xff2a2a3e));
-        g.strokePath (track, juce::PathStrokeType (3.5f,
-            juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
-    }
+    // Label above knob — amber (matches spec: parameter labels are amber)
+    g.setFont (shareTechMono.withHeight (8.0f));
+    g.setColour (cAmber);
+    g.drawText (label, (int)(cx - 36), (int)(cy - arcR - 16), 72, 11,
+                juce::Justification::centred);
 
-    // filled arc
-    {
-        juce::Path filled;
-        filled.addCentredArc (cx, cy, arcR, arcR, 0.0f,
-                              juce::degreesToRadians (startDeg),
-                              juce::degreesToRadians (valueDeg), true);
-        // glow pass
-        g.setColour (accent.withAlpha (0.3f));
-        g.strokePath (filled, juce::PathStrokeType (6.0f,
-            juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
-        // sharp pass
-        g.setColour (accent);
-        g.strokePath (filled, juce::PathStrokeType (3.0f,
-            juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
-    }
-
-    // ── knob body ─────────────────────────────────────────────────────────────
-    {
-        // Outer shadow
-        juce::ColourGradient shadow (juce::Colour (0xff0a0a14), cx, cy + r,
-                                     juce::Colours::transparentBlack, cx, cy - r, false);
-        g.setGradientFill (shadow);
-        g.fillEllipse (b.expanded (3.0f));
-
-        // Body
-        juce::ColourGradient body (juce::Colour (0xff3a3a4e), cx - r * 0.3f, cy - r * 0.4f,
-                                   juce::Colour (0xff111120), cx + r * 0.2f, cy + r * 0.5f, false);
-        g.setGradientFill (body);
-        g.fillEllipse (b);
-
-        // Rim
-        g.setColour (juce::Colour (0xff444455));
-        g.drawEllipse (b, 1.0f);
-
-        // Inner highlight arc (top-left)
-        juce::Path highlight;
-        highlight.addCentredArc (cx, cy, r - 3.0f, r - 3.0f, 0.0f,
-                                 juce::degreesToRadians (-150.0f),
-                                 juce::degreesToRadians (-30.0f), true);
-        g.setColour (juce::Colour (0x22ffffff));
-        g.strokePath (highlight, juce::PathStrokeType (1.5f));
-    }
-
-    // ── pointer dot ──────────────────────────────────────────────────────────
-    {
-        float angle = normToAngle (norm);
-        float dotDist = r - 10.0f;
-        float dx = cx + std::sin (angle) * dotDist;
-        float dy = cy - std::cos (angle) * dotDist;
-
-        // Glow
-        juce::ColourGradient dotGlow (accent.withAlpha (0.6f), dx, dy,
-                                      juce::Colours::transparentBlack, dx + 6, dy + 6, true);
-        g.setGradientFill (dotGlow);
-        g.fillEllipse (dx - 5, dy - 5, 10.0f, 10.0f);
-
-        // Dot
-        g.setColour (accent);
-        g.fillEllipse (dx - 2.5f, dy - 2.5f, 5.0f, 5.0f);
-    }
-
-    // ── label above knob ─────────────────────────────────────────────────────
-    g.setColour (silk);
-    g.setFont (9.0f);
-    g.drawText (knobs[index].label,
-                (int)(cx - 40), (int)(b.getY() - arcR - 16),
-                80, 12, juce::Justification::centred, false);
-
-    // ── value below knob ─────────────────────────────────────────────────────
-    g.setColour (silk);
-    g.setFont (9.0f);
-    g.drawText (formatValue (index),
-                (int)(cx - 40), (int)(b.getBottom() + arcR + 4),
-                80, 12, juce::Justification::centred, false);
-}
-
-//──────────────────────────────────────────────────────────────────────────────
-void PitchWobbleEditor::drawScrew (juce::Graphics& g, float x, float y) const
-{
-    float r = 5.0f;
-    juce::ColourGradient grad (juce::Colour (0xff3a3a4e), x - r, y - r,
-                               juce::Colour (0xff111120), x + r, y + r, false);
-    g.setGradientFill (grad);
-    g.fillEllipse (x - r, y - r, r * 2, r * 2);
-    g.setColour (juce::Colour (0xff555566));
-    g.drawEllipse (x - r, y - r, r * 2, r * 2, 0.75f);
-    // Phillips cross
-    g.setColour (juce::Colour (0x88000000));
-    g.fillRect (x - 3.0f, y - 0.6f, 6.0f, 1.2f);
-    g.fillRect (x - 0.6f, y - 3.0f, 1.2f, 6.0f);
-}
-
-//──────────────────────────────────────────────────────────────────────────────
-juce::String PitchWobbleEditor::formatValue (int index) const
-{
-    auto* param = dynamic_cast<juce::RangedAudioParameter*> (
-                      proc.apvts.getParameter (knobs[index].paramId));
-    if (!param) return {};
-    float v = param->convertFrom0to1 (knobs[index].value);
-
-    if (knobs[index].paramId == "depth")  return juce::String (v, 1) + " ct";
-    if (knobs[index].paramId == "rate")   return juce::String (v, 2) + " Hz";
-    if (knobs[index].paramId == "smooth") return juce::String (v, 2);
-    return juce::String (v, 2);
+    // Value readout below knob
+    g.setFont (shareTechMono.withHeight (8.5f));
+    g.setColour (cSilk);
+    g.drawText (valueText, (int)(cx - 36), (int)(cy + arcR + 6), 72, 11,
+                juce::Justification::centred);
 }
 
 //==============================================================================

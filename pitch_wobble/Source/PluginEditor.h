@@ -1,67 +1,63 @@
 #pragma once
-
 #include <juce_audio_processors/juce_audio_processors.h>
+#include <juce_gui_basics/juce_gui_basics.h>
 #include "PluginProcessor.h"
 
-struct KnobState
-{
-    juce::String paramId;
-    juce::String label;
-    juce::String unit;
-    float        value      = 0.0f;
-    float        dragStart  = 0.0f;
-    int          dragStartY = 0;
-    bool         isDragging = false;
-};
-
 class PitchWobbleEditor : public juce::AudioProcessorEditor,
-                          public juce::AudioProcessorValueTreeState::Listener
+                          private juce::Timer
 {
 public:
-    explicit PitchWobbleEditor (PitchWobbleProcessor&);
+    PitchWobbleEditor (PitchWobbleProcessor&);
     ~PitchWobbleEditor() override;
 
     void paint   (juce::Graphics&) override;
     void resized () override;
-
-    void mouseDown      (const juce::MouseEvent&) override;
-    void mouseDrag      (const juce::MouseEvent&) override;
-    void mouseUp        (const juce::MouseEvent&) override;
-    void mouseWheelMove (const juce::MouseEvent&,
-                         const juce::MouseWheelDetails&) override;
-
-    void parameterChanged (const juce::String& paramId, float) override;
+    void timerCallback() override;
 
 private:
     PitchWobbleProcessor& proc;
 
-    static constexpr int   W      = 480;
-    static constexpr int   H      = 280;
-    static constexpr float KNOB_D = 80.0f;
+    juce::Font rajdhaniBold;
+    juce::Font shareTechMono;
+    std::unique_ptr<juce::Drawable> logoDrawable;
 
-    const juce::Colour accent  { 0xffE8820A };
-    const juce::Colour chassis { 0xff1e1e2e };
-    const juce::Colour silk    { 0xffA09890 };
-    const juce::Colour textDim { 0xff7A746C };
-
-    std::array<KnobState, 3> knobs;
-
-    // Invisible sliders — exist solely so FL Studio can find parameters
-    // for automation. Alpha = 0, mouse interception disabled.
+    // Ghost sliders — invisible, exist solely for FL Studio automation
     juce::Slider ghostDepth, ghostRate, ghostSmooth;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>
         attachDepth, attachRate, attachSmooth;
 
-    juce::Rectangle<float> knobBounds (int index) const;
-    int  hitTestKnob (juce::Point<int>) const;
-    void setNorm     (int index, float norm);
+    // Cached normalised values for dirty-check in timer
+    float cachedDepth  = -1.0f;
+    float cachedRate   = -1.0f;
+    float cachedSmooth = -1.0f;
 
-    void drawBackground (juce::Graphics&) const;
-    void drawHeader     (juce::Graphics&) const;
-    void drawKnob       (juce::Graphics&, int index) const;
-    void drawScrew      (juce::Graphics&, float x, float y) const;
+    int   draggingKnob = -1;
+    float dragStartY   = 0.0f;
+    float dragStartVal = 0.0f;
 
-    juce::String formatValue (int index) const;
+    void mouseDown        (const juce::MouseEvent&) override;
+    void mouseDrag        (const juce::MouseEvent&) override;
+    void mouseUp          (const juce::MouseEvent&) override;
+    void mouseDoubleClick (const juce::MouseEvent&) override;
+
+    // Drawing
+    void drawChassis   (juce::Graphics&);
+    void drawScrews    (juce::Graphics&);
+    void drawPlugin    (juce::Graphics&);
+    void drawScanLines (juce::Graphics&, juce::Rectangle<float>, float opacity);
+    void drawKnob      (juce::Graphics&, float cx, float cy, float norm,
+                        const juce::String& label, const juce::String& valueText);
+
+    // Layout
+    juce::Point<float> knobCenter  (int index) const;
+    int                knobHitTest (juce::Point<float>) const;
+
+    // Param helpers
+    float normDepth()  const;
+    float normRate()   const;
+    float normSmooth() const;
+    void  setNorm (int knobIndex, float normVal);
+    juce::String formatValue (int knobIndex) const;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PitchWobbleEditor)
 };
