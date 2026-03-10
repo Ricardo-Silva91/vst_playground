@@ -258,15 +258,19 @@ void ReverseReverbAudioProcessorEditor::drawPlugin(juce::Graphics& g)
                juce::Justification::centredLeft);
 
     // Logo — bottom-right corner
+    // The PNG has a black background so we draw at reduced opacity so the
+    // black areas sink into the dark metal panel and only the bright wireframe shows.
     if (logoImage.isValid())
     {
         const int logoSize = 56;
         const int margin   = 10;
-        g.drawImage(logoImage,
-                    (int)W - logoSize - margin,
-                    kH    - logoSize - margin,
-                    logoSize, logoSize,
+        int lx = (int)W - logoSize - margin;
+        int ly = kH     - logoSize - margin;
+
+        g.setOpacity(0.45f);
+        g.drawImage(logoImage, lx, ly, logoSize, logoSize,
                     0, 0, logoImage.getWidth(), logoImage.getHeight());
+        g.setOpacity(1.0f);
     }
 }
 
