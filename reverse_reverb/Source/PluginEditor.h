@@ -17,8 +17,9 @@ public:
 private:
     ReverseReverbAudioProcessor& audioProcessor;
 
-    juce::Font rajdhaniBold;
-    juce::Font shareTechMono;
+    juce::Font  rajdhaniBold;
+    juce::Font  shareTechMono;
+    juce::Image logoImage;
 
     float roomVal   = 0.0f;
     float wetVal    = 0.0f;

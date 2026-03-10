@@ -30,6 +30,8 @@ ReverseReverbAudioProcessorEditor::ReverseReverbAudioProcessorEditor(ReverseReve
     shareTechMono = juce::Font(juce::FontOptions(
         juce::Typeface::createSystemTypefaceFor(BinaryData::ShareTechMonoRegular_ttf,
                                                 BinaryData::ShareTechMonoRegular_ttfSize)));
+    logoImage = juce::ImageCache::getFromMemory(BinaryData::logo_transparent_png,
+                                                BinaryData::logo_transparent_pngSize);
     startTimerHz(30);
 }
 
@@ -254,6 +256,18 @@ void ReverseReverbAudioProcessorEditor::drawPlugin(juce::Graphics& g)
     g.setColour(cTextDim);
     g.drawText("SPATIAL", (int)(dotX + 5), (int)(badgeY - 5), 50, 10,
                juce::Justification::centredLeft);
+
+    // Logo — bottom-right corner
+    if (logoImage.isValid())
+    {
+        const int logoSize = 56;
+        const int margin   = 10;
+        g.drawImage(logoImage,
+                    (int)W - logoSize - margin,
+                    kH    - logoSize - margin,
+                    logoSize, logoSize,
+                    0, 0, logoImage.getWidth(), logoImage.getHeight());
+    }
 }
 
 //==============================================================================

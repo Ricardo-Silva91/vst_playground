@@ -151,8 +151,31 @@ void ReverseReverbAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 }
 
 //==============================================================================
-// Use GenericAudioProcessorEditor — avoids FL Studio + JUCE 8 font system crash
-// on Apple Silicon. All parameters appear automatically as sliders.
+// Presets
+//==============================================================================
+void ReverseReverbAudioProcessor::applyPreset(int index)
+{
+    if (index < 0 || index >= kNumPresets) return;
+    currentPreset = index;
+    const auto& p = kPresets[index];
+
+    auto set = [](juce::AudioParameterFloat* param, float value) {
+        param->setValueNotifyingHost(param->convertTo0to1(value));
+    };
+
+    set(roomSize,     p.roomSize);
+    set(wetMix,       p.wetMix);
+    set(windowSizeMs, p.windowMs);
+}
+
+const juce::String ReverseReverbAudioProcessor::getProgramName(int index)
+{
+    if (index >= 0 && index < kNumPresets)
+        return kPresets[index].name;
+    return "Unknown";
+}
+
+//==============================================================================
 juce::AudioProcessorEditor* ReverseReverbAudioProcessor::createEditor()
 {
     return new ReverseReverbAudioProcessorEditor(*this);
@@ -164,6 +187,7 @@ void ReverseReverbAudioProcessor::getStateInformation(juce::MemoryBlock& destDat
     stream.writeFloat(roomSize->get());
     stream.writeFloat(wetMix->get());
     stream.writeFloat(windowSizeMs->get());
+    stream.writeInt(currentPreset);
 }
 
 void ReverseReverbAudioProcessor::setStateInformation(const void* data, int sizeInBytes)
@@ -172,6 +196,7 @@ void ReverseReverbAudioProcessor::setStateInformation(const void* data, int size
     *roomSize     = stream.readFloat();
     *wetMix       = stream.readFloat();
     *windowSizeMs = stream.readFloat();
+    currentPreset = stream.readInt();
 }
 
 //==============================================================================
