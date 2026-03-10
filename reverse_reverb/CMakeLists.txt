@@ -10,7 +10,7 @@ juce_add_binary_data(ReverseReverbFonts
     SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/fonts/Rajdhani-Bold.ttf
         ${CMAKE_CURRENT_SOURCE_DIR}/fonts/ShareTechMono-Regular.ttf
-        ${CMAKE_CURRENT_SOURCE_DIR}/logo_transparent.png
+        ${CMAKE_CURRENT_SOURCE_DIR}/logo_transparent.svg
 )
 
 juce_add_plugin(ReverseReverb

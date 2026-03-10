@@ -30,8 +30,8 @@ ReverseReverbAudioProcessorEditor::ReverseReverbAudioProcessorEditor(ReverseReve
     shareTechMono = juce::Font(juce::FontOptions(
         juce::Typeface::createSystemTypefaceFor(BinaryData::ShareTechMonoRegular_ttf,
                                                 BinaryData::ShareTechMonoRegular_ttfSize)));
-    logoImage = juce::ImageCache::getFromMemory(BinaryData::logo_transparent_png,
-                                                BinaryData::logo_transparent_pngSize);
+    logoImage = juce::ImageCache::getFromMemory(BinaryData::logo_transparent_svg,
+                                                BinaryData::logo_transparent_svgSize);
     startTimerHz(30);
 }
 
