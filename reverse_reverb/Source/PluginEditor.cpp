@@ -11,11 +11,11 @@ static const juce::Colour cTextDim  { 0xff7a746c };
 static const juce::Colour cSilk     { 0xffa09890 };
 
 // Layout — single panel, 3 knobs centred with generous spacing
-static constexpr int   kW         = 400;
-static constexpr int   kH         = 310;
-static constexpr float kKnobR     = 28.0f;   // larger knobs since they're the only control
-static constexpr float kKnobSpX   = 110.0f;  // wide spacing so nothing crowds
-static constexpr float kKnobY     = 155.0f;  // vertically centred with room for name above
+static constexpr int   kW         = 520;
+static constexpr int   kH         = 380;
+static constexpr float kKnobR     = 32.0f;
+static constexpr float kKnobSpX   = 140.0f;
+static constexpr float kKnobY     = 190.0f;
 static constexpr int   kNumKnobs  = 3;
 
 //==============================================================================
@@ -257,52 +257,16 @@ void ReverseReverbAudioProcessorEditor::drawPlugin(juce::Graphics& g)
     g.drawText("SPATIAL", (int)(dotX + 5), (int)(badgeY - 5), 50, 10,
                juce::Justification::centredLeft);
 
-    // Logo — circular stamp, bottom-right corner
+    // Logo — bottom-right corner, drawn directly at full opacity
     if (logoImage.isValid())
     {
-        const int   stampSize = 100;
-        const float stampR    = stampSize * 0.5f;
-        const int   margin    = 10;
-        float sx = W - stampSize - margin;
-        float sy = (float)(kH - stampSize - margin);
-        float cx = sx + stampR;
-        float cy = sy + stampR;
-
-        // Fill circle with black — matches logo's background exactly, no blending needed
-        g.setColour(juce::Colours::black);
-        g.fillEllipse(sx, sy, (float)stampSize, (float)stampSize);
-
-        // Outer ring
-        g.setColour(cSilk.withAlpha(0.4f));
-        g.drawEllipse(sx, sy, (float)stampSize, (float)stampSize, 1.5f);
-
-        // Inner dashed ring for stamp feel
-        float innerR = stampR - 5.0f;
-        int   dashes = 28;
-        for (int i = 0; i < dashes; ++i)
-        {
-            float a0 = juce::MathConstants<float>::twoPi * (float)i          / (float)dashes;
-            float a1 = juce::MathConstants<float>::twoPi * (float)(i + 0.55f) / (float)dashes;
-            juce::Path dash;
-            dash.addArc(cx - innerR, cy - innerR, innerR * 2, innerR * 2, a0, a1, true);
-            g.setColour(cSilk.withAlpha(0.2f));
-            g.strokePath(dash, juce::PathStrokeType(1.0f));
-        }
-
-        // Clip to inner circle and draw logo at full opacity — black bg now invisible
-        {
-            juce::Path clip;
-            float clipR = innerR - 2.0f;
-            clip.addEllipse(cx - clipR, cy - clipR, clipR * 2, clipR * 2);
-            g.saveState();
-            g.reduceClipRegion(clip);
-            g.setOpacity(1.0f);
-            float imgSize = clipR * 2;
-            g.drawImage(logoImage,
-                        cx - clipR, cy - clipR, imgSize, imgSize,
-                        0, 0, logoImage.getWidth(), logoImage.getHeight());
-            g.restoreState();
-        }
+        const int logoSize = 140;
+        const int margin   = 14;
+        g.drawImage(logoImage,
+                    (int)W - logoSize - margin,
+                    kH     - logoSize - margin,
+                    logoSize, logoSize,
+                    0, 0, logoImage.getWidth(), logoImage.getHeight());
     }
 }
 
