@@ -3,6 +3,28 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_dsp/juce_dsp.h>
 
+// ── Preset data ───────────────────────────────────────────────────────────────
+struct ThroughTheWallPreset
+{
+    const char* name;
+    float thickness;
+    float bleed;
+    float rattle;
+    float distance;
+};
+
+static constexpr int kNumPresets = 6;
+static const ThroughTheWallPreset kPresets[kNumPresets] =
+{
+    { "Thin Partition",      0.20f, 0.20f, 0.15f, 0.20f },  // cheap drywall, barely filtered
+    { "Apartment Next Door", 0.55f, 0.45f, 0.25f, 0.50f },  // classic shared-wall sound
+    { "Concrete Block",      0.85f, 0.60f, 0.10f, 0.65f },  // heavy wall, dense rumble
+    { "Upstairs Neighbor",   0.70f, 0.75f, 0.20f, 0.80f },  // floor/ceiling, thuddy and diffuse
+    { "Rattling Pipes",      0.40f, 0.30f, 0.85f, 0.35f },  // old building, wall buzzes
+    { "Ghost Room",          0.95f, 0.85f, 0.05f, 0.95f },  // barely there, pure atmosphere
+};
+
+// ── Processor ─────────────────────────────────────────────────────────────────
 class ThroughTheWallAudioProcessor : public juce::AudioProcessor
 {
 public:
@@ -22,18 +44,21 @@ public:
     bool isMidiEffect() const override { return false; }
     double getTailLengthSeconds() const override { return 2.0; }
 
-    int getNumPrograms() override { return 1; }
-    int getCurrentProgram() override { return 0; }
-    void setCurrentProgram(int) override {}
-    const juce::String getProgramName(int) override { return {}; }
+    int getNumPrograms() override { return kNumPresets; }
+    int getCurrentProgram() override { return currentPreset; }
+    void setCurrentProgram(int index) override { applyPreset(index); }
+    const juce::String getProgramName(int index) override;
     void changeProgramName(int, const juce::String&) override {}
 
     void getStateInformation(juce::MemoryBlock&) override;
     void setStateInformation(const void*, int) override;
 
+    void applyPreset(int index);
+
     juce::AudioProcessorValueTreeState apvts;
 
 private:
+    int currentPreset = 0;
     juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 
     // Wall thickness: multi-stage low-pass filter

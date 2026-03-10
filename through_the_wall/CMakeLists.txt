@@ -19,6 +19,10 @@ juce_add_plugin(through_the_wall
     VST3_CATEGORIES "Fx" "Spatial"
 )
 
+juce_add_binary_data(ThroughTheWallData
+    SOURCES logo_transparent.png
+)
+
 target_sources(through_the_wall
     PRIVATE
         Source/PluginProcessor.cpp
@@ -34,6 +38,7 @@ target_compile_definitions(through_the_wall
 
 target_link_libraries(through_the_wall
     PRIVATE
+        ThroughTheWallData
         juce::juce_audio_utils
         juce::juce_dsp
     PUBLIC

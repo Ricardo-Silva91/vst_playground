@@ -180,6 +180,24 @@ void ThroughTheWallAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer
     }
 }
 
+const juce::String ThroughTheWallAudioProcessor::getProgramName(int index)
+{
+    if (index >= 0 && index < kNumPresets)
+        return kPresets[index].name;
+    return {};
+}
+
+void ThroughTheWallAudioProcessor::applyPreset(int index)
+{
+    if (index < 0 || index >= kNumPresets) return;
+    currentPreset = index;
+    const auto& p = kPresets[index];
+    apvts.getParameter("thickness")->setValueNotifyingHost(p.thickness);
+    apvts.getParameter("bleed")    ->setValueNotifyingHost(p.bleed);
+    apvts.getParameter("rattle")   ->setValueNotifyingHost(p.rattle);
+    apvts.getParameter("distance") ->setValueNotifyingHost(p.distance);
+}
+
 void ThroughTheWallAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
 {
     auto state = apvts.copyState();

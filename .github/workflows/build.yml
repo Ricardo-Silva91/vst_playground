@@ -18,7 +18,7 @@ on:
         description: 'Platforms to build'
         required: true
         type: choice
-        default: 'mac'
+        default: 'mac+windows'
         options:
           - mac
           - windows
