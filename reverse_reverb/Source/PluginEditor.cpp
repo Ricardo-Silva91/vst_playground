@@ -261,14 +261,14 @@ void ReverseReverbAudioProcessorEditor::drawPlugin(juce::Graphics& g)
     // Logo — bottom-right corner, rendered from SVG at full crispness
     if (logoDrawable != nullptr)
     {
-        const int logoSize = 140;
+        const int logoSize = 80;
         const int margin   = 14;
         juce::Rectangle<float> bounds(
             W - logoSize - margin,
             kH - logoSize - margin,
             logoSize, logoSize);
         logoDrawable->drawWithin(g, bounds,
-                                 juce::RectanglePlacement::centred, 1.0f);
+                                 juce::RectanglePlacement::centred, 0.4f);
     }
 }
 

@@ -46,7 +46,6 @@ jobs:
             echo "vst_name=$VST" >> $GITHUB_OUTPUT
             echo "should_build=true" >> $GITHUB_OUTPUT
             echo "Manual trigger: building '$VST' for '$PLATFORMS'"
-            # Parse platform selection
             if [[ "$PLATFORMS" == "mac" ]]; then
               echo "build_mac=true"     >> $GITHUB_OUTPUT
               echo "build_windows=false" >> $GITHUB_OUTPUT
@@ -60,15 +59,14 @@ jobs:
           else
             MSG="${{ github.event.head_commit.message }}"
             echo "Commit message: $MSG"
-            # Match conventional commit scope: type(scope): message
             if [[ "$MSG" =~ ^[a-zA-Z0-9_]+\(([a-zA-Z0-9_]+)\): ]]; then
               VST="${BASH_REMATCH[1]}"
               echo "vst_name=$VST" >> $GITHUB_OUTPUT
               echo "should_build=true" >> $GITHUB_OUTPUT
-              echo "Detected scope: '$VST' — defaulting to mac only"
-              # Push commits default to mac only
-              echo "build_mac=true"     >> $GITHUB_OUTPUT
-              echo "build_windows=false" >> $GITHUB_OUTPUT
+              echo "Detected scope: '$VST' — building mac+windows"
+              # Push commits now build both platforms
+              echo "build_mac=true"    >> $GITHUB_OUTPUT
+              echo "build_windows=true" >> $GITHUB_OUTPUT
             else
               echo "vst_name=" >> $GITHUB_OUTPUT
               echo "should_build=false" >> $GITHUB_OUTPUT
@@ -144,15 +142,13 @@ jobs:
           name: ${{ needs.detect.outputs.vst_name }}-VST3-Mac
           path: ${{ needs.detect.outputs.vst_name }}/build/*_Mac.zip
 
-  # ── Publish release (runs after both builds, avoids race condition) ───────
+  # ── Publish release ───────────────────────────────────────────────────────
   publish:
     needs: [detect, build-mac, build-windows]
-    # Run if at least one build was requested and at least one succeeded
+    # Run if should_build and at least one build job actually succeeded
     if: |
       always() &&
       needs.detect.outputs.should_build == 'true' &&
-      (needs.build-mac.result == 'success' || needs.build-mac.result == 'skipped') &&
-      (needs.build-windows.result == 'success' || needs.build-windows.result == 'skipped') &&
       (needs.build-mac.result == 'success' || needs.build-windows.result == 'success')
     runs-on: ubuntu-latest
     steps:
