@@ -32,26 +32,6 @@ ReverseReverbAudioProcessorEditor::ReverseReverbAudioProcessorEditor(ReverseReve
                                                 BinaryData::ShareTechMonoRegular_ttfSize)));
     logoImage = juce::ImageCache::getFromMemory(BinaryData::logo_transparent_png,
                                                 BinaryData::logo_transparent_pngSize);
-
-    // The PNG has a black background — convert dark pixels to transparent so the
-    // wireframe lines render cleanly against the panel without blurry blending.
-    if (logoImage.isValid())
-    {
-        logoImage = logoImage.createCopy();
-        for (int y = 0; y < logoImage.getHeight(); ++y)
-        {
-            for (int x = 0; x < logoImage.getWidth(); ++x)
-            {
-                juce::Colour c = logoImage.getPixelAt(x, y);
-                // Brightness: pixels darker than threshold become fully transparent
-                float brightness = c.getBrightness();
-                if (brightness < 0.15f)
-                    logoImage.setPixelAt(x, y, juce::Colours::transparentBlack);
-                else
-                    logoImage.setPixelAt(x, y, c.withAlpha(brightness));
-            }
-        }
-    }
     startTimerHz(30);
 }
 
@@ -277,20 +257,52 @@ void ReverseReverbAudioProcessorEditor::drawPlugin(juce::Graphics& g)
     g.drawText("SPATIAL", (int)(dotX + 5), (int)(badgeY - 5), 50, 10,
                juce::Justification::centredLeft);
 
-    // Logo — bottom-right corner
-    // The PNG has a black background so we draw at reduced opacity so the
-    // black areas sink into the dark metal panel and only the bright wireframe shows.
+    // Logo — circular stamp, bottom-right corner
     if (logoImage.isValid())
     {
-        const int logoSize = 90;
-        const int margin   = 10;
-        int lx = (int)W - logoSize - margin;
-        int ly = kH     - logoSize - margin;
+        const int   stampSize = 100;
+        const float stampR    = stampSize * 0.5f;
+        const int   margin    = 10;
+        float sx = W - stampSize - margin;
+        float sy = (float)(kH - stampSize - margin);
+        float cx = sx + stampR;
+        float cy = sy + stampR;
 
-        g.setOpacity(0.85f);
-        g.drawImage(logoImage, lx, ly, logoSize, logoSize,
-                    0, 0, logoImage.getWidth(), logoImage.getHeight());
-        g.setOpacity(1.0f);
+        // Fill circle with black — matches logo's background exactly, no blending needed
+        g.setColour(juce::Colours::black);
+        g.fillEllipse(sx, sy, (float)stampSize, (float)stampSize);
+
+        // Outer ring
+        g.setColour(cSilk.withAlpha(0.4f));
+        g.drawEllipse(sx, sy, (float)stampSize, (float)stampSize, 1.5f);
+
+        // Inner dashed ring for stamp feel
+        float innerR = stampR - 5.0f;
+        int   dashes = 28;
+        for (int i = 0; i < dashes; ++i)
+        {
+            float a0 = juce::MathConstants<float>::twoPi * (float)i          / (float)dashes;
+            float a1 = juce::MathConstants<float>::twoPi * (float)(i + 0.55f) / (float)dashes;
+            juce::Path dash;
+            dash.addArc(cx - innerR, cy - innerR, innerR * 2, innerR * 2, a0, a1, true);
+            g.setColour(cSilk.withAlpha(0.2f));
+            g.strokePath(dash, juce::PathStrokeType(1.0f));
+        }
+
+        // Clip to inner circle and draw logo at full opacity — black bg now invisible
+        {
+            juce::Path clip;
+            float clipR = innerR - 2.0f;
+            clip.addEllipse(cx - clipR, cy - clipR, clipR * 2, clipR * 2);
+            g.saveState();
+            g.reduceClipRegion(clip);
+            g.setOpacity(1.0f);
+            float imgSize = clipR * 2;
+            g.drawImage(logoImage,
+                        cx - clipR, cy - clipR, imgSize, imgSize,
+                        0, 0, logoImage.getWidth(), logoImage.getHeight());
+            g.restoreState();
+        }
     }
 }
 
