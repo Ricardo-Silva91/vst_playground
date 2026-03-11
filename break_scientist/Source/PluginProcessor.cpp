@@ -391,7 +391,7 @@ void BreakScientistProcessor::setStateInformation (const void* data, int sizeInB
 // ── Editor factory ────────────────────────────────────────────────────────────
 juce::AudioProcessorEditor* BreakScientistProcessor::createEditor()
 {
-    return new juce::GenericAudioProcessorEditor (*this);
+    return new BreakScientistEditor (*this);
 }
 
 // ── Plugin entry point ────────────────────────────────────────────────────────
