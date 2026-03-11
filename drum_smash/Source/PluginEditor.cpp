@@ -10,10 +10,9 @@ static const juce::Colour cTextDim { 0xff7a746c };
 static const juce::Colour cSilk    { 0xffa09890 };
 
 // ── Layout ────────────────────────────────────────────────────────────────────
-static constexpr int   kW          = 580;
-static constexpr int   kH          = 380;
-static constexpr int   kPresetBarH = 28;
-static constexpr float kKnobR      = 32.f;
+static constexpr int   kW     = 580;
+static constexpr int   kH     = 340;
+static constexpr float kKnobR = 32.f;
 
 // 5 knobs in a single row, centred
 static constexpr int   kNumKnobs   = 5;
@@ -125,9 +124,6 @@ void DrumSmashEditor::timerCallback()
 // ── Mouse ─────────────────────────────────────────────────────────────────────
 void DrumSmashEditor::mouseDown (const juce::MouseEvent& e)
 {
-    int pr = presetHitTest (e.position);
-    if (pr >= 0) { selectedPreset = pr; proc.setCurrentProgram (pr); repaint(); return; }
-
     int k = knobHitTest (e.position);
     if (k >= 0) { draggingKnob = k; dragStartY = e.position.y; dragStartVal = getNorm (k); }
 }
@@ -274,13 +270,12 @@ void DrumSmashEditor::drawPlugin (juce::Graphics& g)
     {
         const float sz = 64.f, margin = 14.f;
         juce::Rectangle<float> bounds (W - sz - margin,
-                                        kH - kPresetBarH - sz - margin,
+                                        kH - sz - margin,
                                         sz, sz);
         logoDrawable->drawWithin (g, bounds, juce::RectanglePlacement::centred, 0.4f);
     }
 
-    // Preset bar at bottom
-    drawPresetBar (g);
+
 }
 
 // ── Preset bar ────────────────────────────────────────────────────────────────

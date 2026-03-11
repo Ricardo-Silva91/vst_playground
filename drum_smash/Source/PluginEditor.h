@@ -29,12 +29,9 @@ private:
     void drawPlugin    (juce::Graphics&);
     void drawKnob      (juce::Graphics&, float cx, float cy, float norm,
                         const juce::String& label, const juce::String& val);
-    void drawPresetBar (juce::Graphics&);
 
-    juce::Point<float> knobCenter   (int idx) const;
-    int                knobHitTest  (juce::Point<float>) const;
-    int                presetHitTest(juce::Point<float>) const;
-    juce::Rectangle<float> presetBtnRect(int i) const;
+    juce::Point<float> knobCenter  (int idx) const;
+    int                knobHitTest (juce::Point<float>) const;
 
     float        getNorm     (int knobIdx) const;
     void         setNorm     (int knobIdx, float norm);
@@ -47,7 +44,6 @@ private:
     std::unique_ptr<juce::Drawable> logoDrawable;
 
     float cachedNorm[5] = {};
-    int   selectedPreset = 0;
 
     int   draggingKnob = -1;
     float dragStartY   = 0.f;
