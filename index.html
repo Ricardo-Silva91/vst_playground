@@ -8,20 +8,20 @@
   <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="shared.css">
   <style>
-    /* Index-only: header margin */
     header { margin: 2rem 0 1.5rem; }
   </style>
 </head>
 <body>
 <div class="page">
 
-  <!-- ── HEADER NAMEPLATE ── -->
   <header>
     <div class="nameplate">
       <div class="brand" style="display:flex;flex-direction:row;align-items:center;gap:1.2rem;">
         <img src="assets/logo.png" alt="Lizard VST" class="logo-img">
-        <span class="brand-eyebrow">Audio Effects Collection</span>
-        <span class="brand-name">LIZARD<span> VST</span></span>
+        <div style="display:flex;flex-direction:column;gap:0.2rem;">
+          <span class="brand-eyebrow">Audio Effects Collection</span>
+          <span class="brand-name">LIZARD<span> VST</span></span>
+        </div>
       </div>
       <div class="header-right">
         <div class="led-cluster">
@@ -35,12 +35,11 @@
     </div>
   </header>
 
-  <!-- ── INTRO STRIP ── -->
   <div class="intro-strip">
     <p class="intro-text">
-      A growing collection of <strong>character-driven audio effects</strong> for Mac and Windows.
-      Each plugin explores a specific sonic personality: spatial decay, pitch instability, physical barriers, raw drum destruction.
-      <strong>All stereo. All free.</strong>
+      A collection of <strong>free, character-driven audio effects</strong> for Mac and Windows.
+      Each plugin explores a distinct sonic idea: spatial bloom, organic pitch drift, architectural transmission, raw drum destruction.
+      <strong>All stereo. All VST3. No registration.</strong>
     </p>
     <div class="spec-row">
       <div class="spec"><span class="spec-val">04</span><span class="spec-label">Plugins</span></div>
@@ -49,7 +48,6 @@
     </div>
   </div>
 
-  <!-- ── MODULES ── -->
   <div class="modules">
 
     <!-- REVERSE REVERB -->
@@ -72,7 +70,7 @@
         </div>
         <div class="module-content">
           <p class="module-desc">
-            Captures incoming audio in short windows, reverses them, and applies reverb to create that <strong>ethereal swell-before-the-hit</strong> effect loved in ambient and cinematic production. The wet signal blooms before the dry signal even sounds.
+            Captures audio in windows, reverses them, applies reverb, and plays the tail back so the <strong>bloom swells before the hit lands</strong>. The wet signal arrives ahead of the dry signal — ghostly, atmospheric, eerie. Latency equals the window length.
           </p>
           <div class="module-bottom">
             <div class="params-group">
@@ -85,19 +83,16 @@
             </div>
             <div class="dl-row">
               <a class="dl-btn mac" href="https://github.com/Ricardo-Silva91/vst_playground/releases/download/reverse_reverb-latest/ReverseReverb.vst3_Mac.zip">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 1 0 20A10 10 0 0 1 12 2z"/><path d="M12 8v8M8 14l4 4 4-4"/></svg>
-                macOS
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 1 0 20A10 10 0 0 1 12 2z"/><path d="M12 8v8M8 14l4 4 4-4"/></svg>macOS
               </a>
               <a class="dl-btn win" href="https://github.com/Ricardo-Silva91/vst_playground/releases/download/reverse_reverb-latest/ReverseReverb.vst3_Windows.zip">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8"/><rect x="13" y="3" width="8" height="8"/><rect x="3" y="13" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/></svg>
-                Windows
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8"/><rect x="13" y="3" width="8" height="8"/><rect x="3" y="13" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/></svg>Windows
               </a>
               <a class="dl-btn" href="reverse_reverb.html" style="color:var(--silk);margin-left:0.3rem;">Details &#8250;</a>
             </div>
           </div>
         </div>
       </div>
-      <!-- VU meter -->
       <div class="vu-wrap">
         <div class="vu-seg on-red"></div>
         <div class="vu-seg on-amber"></div>
@@ -130,7 +125,7 @@
         </div>
         <div class="module-content">
           <p class="module-desc">
-            Applies sinusoidal pitch modulation with a smoothed LFO, simulating the <strong>unstable wow and flutter</strong> of degraded tape, warped vinyl, or a trembling voice. The Smoothness control morphs between snappy vibrato and gentle seasickness.
+            Continuously drifts pitch by small random amounts, never straying far from the original. Each movement picks a new random target and glides toward it, creating the <strong>natural micro-tuning of a live performance or the flutter of tape degradation</strong>. Not a vibrato.
           </p>
           <div class="module-bottom">
             <div class="params-group">
@@ -143,12 +138,10 @@
             </div>
             <div class="dl-row">
               <a class="dl-btn mac" href="https://github.com/Ricardo-Silva91/vst_playground/releases/download/pitch_wobble-latest/PitchWobble.vst3_Mac.zip">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 1 0 20A10 10 0 0 1 12 2z"/><path d="M12 8v8M8 14l4 4 4-4"/></svg>
-                macOS
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 1 0 20A10 10 0 0 1 12 2z"/><path d="M12 8v8M8 14l4 4 4-4"/></svg>macOS
               </a>
               <a class="dl-btn win" href="https://github.com/Ricardo-Silva91/vst_playground/releases/download/pitch_wobble-latest/PitchWobble.vst3_Windows.zip">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8"/><rect x="13" y="3" width="8" height="8"/><rect x="3" y="13" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/></svg>
-                Windows
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8"/><rect x="13" y="3" width="8" height="8"/><rect x="3" y="13" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/></svg>Windows
               </a>
               <a class="dl-btn" href="pitch_wobble.html" style="color:var(--silk);margin-left:0.3rem;">Details &#8250;</a>
             </div>
@@ -187,7 +180,7 @@
         </div>
         <div class="module-content">
           <p class="module-desc">
-            Simulates audio travelling through <strong>physical architecture</strong>: a thick wall, a resonating room, a distant space. Material absorption, room bleed, and surface rattle combine to make things feel genuinely far away or muffled behind something solid.
+            Puts your audio on the other side of a wall. Not a lo-fi filter — a <strong>physically modelled transmission effect</strong> replicating four real acoustic phenomena: high-frequency absorption, wall resonance, room bleed, and spatial distance.
           </p>
           <div class="module-bottom">
             <div class="params-group">
@@ -201,12 +194,10 @@
             </div>
             <div class="dl-row">
               <a class="dl-btn mac" href="https://github.com/Ricardo-Silva91/vst_playground/releases/download/through_the_wall-latest/Through_The_Wall.vst3_Mac.zip">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 1 0 20A10 10 0 0 1 12 2z"/><path d="M12 8v8M8 14l4 4 4-4"/></svg>
-                macOS
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 1 0 20A10 10 0 0 1 12 2z"/><path d="M12 8v8M8 14l4 4 4-4"/></svg>macOS
               </a>
               <a class="dl-btn win" href="https://github.com/Ricardo-Silva91/vst_playground/releases/download/through_the_wall-latest/Through_The_Wall.vst3_Windows.zip">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8"/><rect x="13" y="3" width="8" height="8"/><rect x="3" y="13" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/></svg>
-                Windows
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8"/><rect x="13" y="3" width="8" height="8"/><rect x="3" y="13" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/></svg>Windows
               </a>
               <a class="dl-btn" href="through_the_wall.html" style="color:var(--silk);margin-left:0.3rem;">Details &#8250;</a>
             </div>
@@ -245,7 +236,7 @@
         </div>
         <div class="module-content">
           <p class="module-desc">
-            A full-featured <strong>drum character processor</strong> with 21 parameters across 8 sections. Takes a clean drum hit and destroys it in exactly the right ways: bit crushing, tape saturation, noise injection, transient shaping, dynamic compression, and stereo widening.
+            Runs drums through a full destruction chain: bit crushing, saturation, vinyl noise, compression, reverb, pitch and wow flutter, stereo shaping. <strong>Five knobs cover the essentials. 21 parameters cover everything.</strong> Eight factory presets cover the moods.
           </p>
           <div class="module-bottom">
             <div class="params-group">
@@ -260,31 +251,21 @@
                 <span class="preset">Nuclear Snare</span>
                 <span class="preset">Bedroom Boom-Bap</span>
               </div>
-              <p class="params-label" style="margin-top:0.5rem;">Parameters (21 total)</p>
+              <p class="params-label" style="margin-top:0.5rem;">Front Panel Knobs</p>
               <div class="params">
-                <span class="param">Bit Depth</span>
                 <span class="param">Drive</span>
-                <span class="param">Saturation</span>
-                <span class="param">Noise Amt</span>
-                <span class="param">Crackle</span>
-                <span class="param">Transient</span>
-                <span class="param">HPF</span>
-                <span class="param">LPF</span>
-                <span class="param">Comp Ratio</span>
-                <span class="param">Reverb Mix</span>
-                <span class="param">Width</span>
-                <span class="param">Wow Depth</span>
-                <span class="param">Output Gain</span>
+                <span class="param">Crush</span>
+                <span class="param">Noise</span>
+                <span class="param">Comp</span>
+                <span class="param">Verb</span>
               </div>
             </div>
             <div class="dl-row">
               <a class="dl-btn mac" href="https://github.com/Ricardo-Silva91/vst_playground/releases/download/drum_smash-latest/Drum_Smash.vst3_Mac.zip">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 1 0 20A10 10 0 0 1 12 2z"/><path d="M12 8v8M8 14l4 4 4-4"/></svg>
-                macOS
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 1 0 20A10 10 0 0 1 12 2z"/><path d="M12 8v8M8 14l4 4 4-4"/></svg>macOS
               </a>
               <a class="dl-btn win" href="https://github.com/Ricardo-Silva91/vst_playground/releases/download/drum_smash-latest/Drum_Smash.vst3_Windows.zip">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8"/><rect x="13" y="3" width="8" height="8"/><rect x="3" y="13" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/></svg>
-                Windows
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8"/><rect x="13" y="3" width="8" height="8"/><rect x="3" y="13" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/></svg>Windows
               </a>
               <a class="dl-btn" href="drum_smash.html" style="color:var(--silk);margin-left:0.3rem;">Details &#8250;</a>
             </div>
@@ -305,10 +286,9 @@
 
   </div><!-- /modules -->
 
-  <!-- FOOTER -->
   <footer>
     <div class="screw tl"></div><div class="screw tr"></div>
-    <span class="footer-text">Lizard VST &nbsp;&#183;&nbsp; Free VST3 &nbsp;·&nbsp; macOS &amp; Windows &nbsp;·&nbsp; Stereo</span>
+    <span class="footer-text">Lizard VST &nbsp;&#183;&nbsp; Free VST3 &nbsp;&#183;&nbsp; macOS &amp; Windows &nbsp;&#183;&nbsp; Stereo</span>
     <a class="footer-link" href="https://github.com/Ricardo-Silva91/vst_playground" target="_blank">&#8599; See on GitHub</a>
   </footer>
 

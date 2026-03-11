@@ -8,14 +8,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="shared.css">
   <style>
-    :root {
-      --accent:     #e8820a;
-      --accent-rgb: 232,130,10;
-    }
-    /* Per-plugin knob body tint */
-    .hero-face .knob {
-      background: radial-gradient(circle at 35% 30%, #4a3a20 0%, #2a1e0a 45%, #0d0a04 100%);
-    }
+    :root { --accent: #e8820a; --accent-rgb: 232,130,10; }
+    .hero-face .knob { background: radial-gradient(circle at 35% 30%, #4a3a20 0%, #2a1e0a 45%, #0d0a04 100%); }
   </style>
 </head>
 <body>
@@ -28,7 +22,8 @@
   </nav>
 
   <div class="hero">
-    <div class="screw tl"></div><div class="screw tr"></div><div class="screw bl"></div><div class="screw br"></div>
+    <div class="screw tl"></div><div class="screw tr"></div>
+    <div class="screw bl"></div><div class="screw br"></div>
     <div class="hero-inner">
       <div class="hero-face">
         <span class="hero-num">MODULE 02 / 04</span>
@@ -42,13 +37,12 @@
           <div class="cat-dot" style="background:var(--led-amber);box-shadow:0 0 5px rgba(232,130,10,0.8);"></div>
           Modulation
         </div>
-      
         <img src="assets/logo.png" alt="Lizard VST" class="hero-logo">
       </div>
       <div class="hero-body">
         <div class="hero-tagline">The instability that makes it feel alive.</div>
         <p class="hero-desc">
-          Pitch Wobble applies a sinusoidal LFO to the pitch of the incoming signal. A smoothing stage makes the modulation curve feel organic rather than mechanical. The result ranges from <strong>subtle tape-style drift to lurching seasick detuning</strong>, depending on how far you push Depth and Rate.
+          Pitch Wobble continuously drifts pitch by tiny random amounts, never straying far from the original — the base pitch always returns. Each movement picks a new random target and glides toward it at its own pace. <strong>The result sits between the natural micro-tuning of a live performance and the mechanical flutter of tape degradation.</strong> Not a vibrato — the movement is never regular.
         </p>
         <div class="hero-dl">
           <a class="dl-btn mac" href="https://github.com/Ricardo-Silva91/vst_playground/releases/download/pitch_wobble-latest/PitchWobble.vst3_Mac.zip">
@@ -66,37 +60,72 @@
     <div class="panel">
       <div class="panel-title">Signal Chain</div>
       <div class="chain">
-        <span class="chain-node">Input</span>
-        <span class="chain-arrow">&#8250;</span>
-        <span class="chain-node highlight">LFO Generator</span>
-        <span class="chain-arrow">&#8250;</span>
-        <span class="chain-node highlight">Smoother</span>
-        <span class="chain-arrow">&#8250;</span>
-        <span class="chain-node highlight">Pitch Shift</span>
-        <span class="chain-arrow">&#8250;</span>
+        <span class="chain-node">Input</span><span class="chain-arrow">&#8250;</span>
+        <span class="chain-node highlight">Circular Buffer</span><span class="chain-arrow">&#8250;</span>
+        <span class="chain-node highlight">Variable-speed Read Head</span><span class="chain-arrow">&#8250;</span>
         <span class="chain-node">Output</span>
       </div>
       <p class="chain-note">
-        A sinusoidal LFO oscillates at the frequency set by <em>Rate</em>, with amplitude determined by <em>Depth</em> in cents. Before it reaches the pitch shifter, the modulation signal passes through a low-pass smoother whose cutoff is controlled by <em>Smoothness</em>. High smoothness rounds off the sinusoid, making the pitch drift feel lazy and organic. Low smoothness lets the full waveshape through, producing tighter, more mechanical vibrato.
+        Pitch shifting works by reading back through a circular buffer at a slightly varying speed — faster than 1&times; raises pitch, slower lowers it. A new random pitch target is picked at the frequency set by <em>Rate</em>. The read head glides toward each target at a speed controlled by <em>Smoothness</em>. Because the speed variation averages out over time, the base pitch is preserved — the source never drifts permanently out of tune.
       </p>
     </div>
     <div class="panel">
       <div class="panel-title">Parameters</div>
       <div class="param-list">
         <div class="param-card">
-          <div class="param-name">Depth (cents)</div>
-          <p class="param-desc">Sets the maximum pitch deviation in cents. <strong>1-5 cents</strong> is almost subliminal, adding life to an otherwise static source. <strong>10-30 cents</strong> produces noticeable tape-style warble. Above 50 cents the effect becomes obviously detuned and dramatic.</p>
-          <div class="param-range">Range: 0 &#8594; 100+ cents</div>
+          <div class="param-name">Depth</div>
+          <p class="param-desc">Maximum pitch deviation in cents. <strong>At low values the effect is nearly subliminal</strong>, adding life without any obvious pitch movement. Above 20 cents it becomes clearly audible as tape-style warble. Push higher for seasick or psychedelic textures.</p>
+          <div class="param-range">Range: 0 &rarr; 30 ct &nbsp;&nbsp; Default: 8 ct</div>
         </div>
         <div class="param-card">
-          <div class="param-name">Rate (Hz)</div>
-          <p class="param-desc">Controls how fast the pitch oscillates. <strong>Below 1 Hz</strong> creates slow, drifting movement. <strong>2-6 Hz</strong> is the classic vibrato range. <strong>Above 8 Hz</strong> starts to feel nervous and unstable. Very high rates produce a tremolo-like roughness at the pitch level.</p>
-          <div class="param-range">Range: 0.1 &#8594; 20+ Hz</div>
+          <div class="param-name">Rate</div>
+          <p class="param-desc">How often a new pitch target is chosen. <strong>Slow rates feel like long organic swells</strong>; fast rates feel erratic and chaotic. Very low rates produce the feeling of a tape machine warming up or slowing down.</p>
+          <div class="param-range">Range: 0.1 &rarr; 5 Hz &nbsp;&nbsp; Default: 1.0 Hz</div>
         </div>
         <div class="param-card">
           <div class="param-name">Smoothness</div>
-          <p class="param-desc">Filters the LFO waveform before it hits the pitch shifter. <strong>Low values</strong> preserve the sharp edges of the sine, giving a crisper, more traditional vibrato. <strong>High values</strong> blur and delay the modulation, producing the irregular, weighted feel of a stretched tape spool slowing down.</p>
-          <div class="param-range">Range: 0 (crisp) &#8594; 1 (sluggish)</div>
+          <p class="param-desc">How gradually the pitch glides between targets. <strong>Low values produce snappy, jerky movement</strong>. High values produce slow, continuous drift — the weighted feel of a stretched tape spool slowing down.</p>
+          <div class="param-range">Range: 0.00 (snappy) &rarr; 1.00 (sluggish) &nbsp;&nbsp; Default: 0.70</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content-grid wide">
+    <div class="panel">
+      <div class="panel-title">Presets</div>
+      <div class="preset-grid">
+        <div class="preset-card">
+          <div class="preset-name">Breath of Life</div>
+          <p class="preset-desc">Barely perceptible vocal humaniser. Adds the micro-pitch drift of a careful singer. Subtle.</p>
+        </div>
+        <div class="preset-card">
+          <div class="preset-name">Studio Drift</div>
+          <p class="preset-desc">Gentle live-instrument feel. Good for strings, acoustic guitar, or any tracked instrument.</p>
+        </div>
+        <div class="preset-card">
+          <div class="preset-name">Worn Cassette</div>
+          <p class="preset-desc">Sluggish tape motor with soft, irregular jerks. Mid-depth with low smoothness.</p>
+        </div>
+        <div class="preset-card">
+          <div class="preset-name">Reel to Reel</div>
+          <p class="preset-desc">Heavier flutter from an older machine. Slower rate, more pronounced deviation.</p>
+        </div>
+        <div class="preset-card">
+          <div class="preset-name">Open Water</div>
+          <p class="preset-desc">Long, slow, nauseating swells. Very smooth, very deep. Use sparingly on sustained notes.</p>
+        </div>
+        <div class="preset-card">
+          <div class="preset-name">The Bends</div>
+          <p class="preset-desc">Deeper and slightly faster than Open Water. Genuinely uncomfortable on long tones.</p>
+        </div>
+        <div class="preset-card">
+          <div class="preset-name">Frayed Signal</div>
+          <p class="preset-desc">Fast random snapping between targets. Pitch feels unstable and feverish.</p>
+        </div>
+        <div class="preset-card">
+          <div class="preset-name">Total Dissolution</div>
+          <p class="preset-desc">Maximum depth, maximum rate, minimum smoothness. Full chaos.</p>
         </div>
       </div>
     </div>
@@ -107,24 +136,24 @@
       <div class="panel-title">Use Cases</div>
       <div class="usecase-list">
         <div class="usecase-card">
-          <div class="usecase-title">Lo-Fi and Tape Character</div>
-          <p class="usecase-body">At low depth and a slow rate with high smoothness, Pitch Wobble adds the <strong>imperceptible drift of a tape machine</strong> that's slightly off-speed. Apply to whole stems or buses for a cohesive lo-fi glue without any obvious pitch movement.</p>
-          <div class="usecase-settings">Depth: 3-8 cents / Rate: 0.3-0.8 Hz / Smoothness: 0.7-0.9</div>
+          <div class="usecase-title">Vocals and voice humanisation</div>
+          <p class="usecase-body">Adds the subtle pitch drift of a real singer. At low depth the effect is completely imperceptible as a pitch effect — it just makes the vocal feel <strong>less locked to the grid</strong>, more present and alive.</p>
+          <div class="usecase-settings">Depth: 3–8 ct / Rate: 0.5–1.5 Hz / Smoothness: 0.6–0.8</div>
         </div>
         <div class="usecase-card">
-          <div class="usecase-title">Vintage Synth Lead</div>
-          <p class="usecase-body">Synthesizers of the 70s and 80s had oscillator instability as a feature. A moderate depth at around 3-4 Hz with medium smoothness replicates that <strong>warm, wobbly character</strong> that makes digital synths feel analog. Works especially well on saw and square wave leads.</p>
-          <div class="usecase-settings">Depth: 12-20 cents / Rate: 3-4 Hz / Smoothness: 0.4-0.6</div>
+          <div class="usecase-title">Lo-fi tape and cassette aesthetics</div>
+          <p class="usecase-body">At low depth and slow rate with high smoothness, the effect adds the <strong>imperceptible drift of a tape machine running slightly off-speed</strong>. Apply to whole stems or buses for cohesive lo-fi glue without any obvious pitch movement.</p>
+          <div class="usecase-settings">Depth: 3–8 ct / Rate: 0.3–0.8 Hz / Smoothness: 0.7–0.9</div>
         </div>
         <div class="usecase-card">
-          <div class="usecase-title">Horror and Tension Sound Design</div>
-          <p class="usecase-body">With high depth and a very slow rate (0.1-0.3 Hz), sustained notes develop a <strong>nauseating, unsettling quality</strong>. Stack on drones, pads, or processed voice. High smoothness makes it feel like the pitch is being dragged reluctantly rather than oscillating cleanly.</p>
-          <div class="usecase-settings">Depth: 40-80 cents / Rate: 0.1-0.3 Hz / Smoothness: 0.8-1.0</div>
+          <div class="usecase-title">Synth pads and drones</div>
+          <p class="usecase-body">Breaks up the sterile perfection of digital oscillators. Run several instances on duplicate pad layers, each with slightly different Rate — each voice wobbles independently, creating the <strong>natural detuning of a real ensemble</strong>.</p>
+          <div class="usecase-settings">Depth: 5–15 ct / Rate: 2–5 Hz (vary per instance) / Smoothness: 0.5</div>
         </div>
         <div class="usecase-card">
-          <div class="usecase-title">Detuned Choir / Ensemble Effect</div>
-          <p class="usecase-body">Run several instances on duplicate vocal or string tracks, each with slightly different Rate and phase start positions. Each voice wobbles independently, creating the <strong>natural detuning of a real ensemble</strong> where no two players are in perfect unison.</p>
-          <div class="usecase-settings">Depth: 5-15 cents / Rate: 2-5 Hz (vary per instance) / Smoothness: 0.5</div>
+          <div class="usecase-title">Horror and tension sound design</div>
+          <p class="usecase-body">With high depth and very slow rate, sustained notes develop a <strong>nauseating, unsettling quality</strong>. High smoothness makes the pitch feel like it's being dragged reluctantly rather than oscillating cleanly. Stack on drones or processed voice.</p>
+          <div class="usecase-settings">Depth: 20–30 ct / Rate: 0.1–0.3 Hz / Smoothness: 0.8–1.0</div>
         </div>
       </div>
     </div>
@@ -136,19 +165,19 @@
       <div class="tip-list">
         <div class="tip">
           <span class="tip-icon">&#9654;</span>
-          <p class="tip-text"><strong>Small depth, always.</strong> The most musical uses of this plugin are at depths you can barely hear consciously. 3-10 cents on a vocal or pad adds life without ever reading as "pitch effect." Resist going bigger unless drama is the goal.</p>
+          <p class="tip-text"><strong>Small depth, always.</strong> The most musical uses of this plugin are at depths you can barely hear consciously. 3–10 cents on a vocal or pad adds life without ever reading as a "pitch effect." Resist going bigger unless drama is the goal.</p>
         </div>
         <div class="tip">
           <span class="tip-icon">&#9654;</span>
-          <p class="tip-text"><strong>Rate below the note duration.</strong> If your notes are quarter notes at 120 BPM (500ms each), a rate of 2 Hz means the pitch completes a full cycle in 500ms. Matching or sub-matching the rate to note length keeps the wobble from clashing with melody.</p>
+          <p class="tip-text"><strong>All three parameters are fully automatable.</strong> Automating Depth over a track is a particularly effective way to introduce wobble only at specific moments — fading it in on a long sustain or final note, for example.</p>
         </div>
         <div class="tip">
           <span class="tip-icon">&#9654;</span>
-          <p class="tip-text"><strong>Use on a send, not an insert.</strong> Running the plugin at full wet on a parallel send lets you blend in just the wobbling signal, keeping the attack and transients of the dry signal intact while the sustain drifts.</p>
+          <p class="tip-text"><strong>Use on a send, not an insert.</strong> Running fully wet on a parallel send lets you blend in just the wobbling signal, keeping the attack and transients of the dry signal intact while the sustain drifts.</p>
         </div>
         <div class="tip">
           <span class="tip-icon">&#9654;</span>
-          <p class="tip-text"><strong>Automate Depth for expression.</strong> Start at 0 cents and automate the depth upward during a sustain or hold. The note begins stable and gradually drifts, mimicking the natural swell of vibrato a vocalist adds as a note progresses.</p>
+          <p class="tip-text"><strong>Automate Depth for expression.</strong> Start at 0 cents and automate the depth upward during a sustain. The note begins stable and gradually drifts, mimicking the natural swell of vibrato a vocalist adds as a note progresses.</p>
         </div>
         <div class="tip">
           <span class="tip-icon">&#9654;</span>
@@ -160,7 +189,7 @@
 
   <footer>
     <div class="screw tl"></div><div class="screw tr"></div>
-    <span class="footer-text">vst_playground &nbsp;&#183;&nbsp; Free VST3 &nbsp;&#183;&nbsp; macOS &amp; Windows</span>
+    <span class="footer-text">Lizard VST &nbsp;&#183;&nbsp; Free VST3 &nbsp;&#183;&nbsp; macOS &amp; Windows</span>
     <a class="footer-link" href="https://github.com/Ricardo-Silva91/vst_playground" target="_blank">&#8599; See on GitHub</a>
   </footer>
 
