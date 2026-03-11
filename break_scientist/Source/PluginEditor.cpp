@@ -269,12 +269,7 @@ void BreakScientistEditor::drawGroup (juce::Graphics& g,
                                        const KnobInfo* knobs,
                                        int startIdx)
 {
-    // Group background panel — slightly inset
     auto panel = area.reduced (6.f, 4.f);
-    g.setColour (juce::Colour (0xff1c1c1c));
-    g.fillRoundedRectangle (panel, 4.f);
-    g.setColour (cAccent.withAlpha (0.18f));
-    g.drawRoundedRectangle (panel, 4.f, 1.f);
 
     // Group title
     g.setFont (shareTechMono.withHeight (8.5f));
