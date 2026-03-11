@@ -18,13 +18,19 @@ struct BreakPreset
 
 static const BreakPreset kPresets[] =
 {
-    // name            swing   hum    drag   sens   vel    wet
-    { "Donuts",        0.68f,  0.75f, 0.65f, 0.55f, 0.60f, 1.0f  },
-    { "MPC Straight",  0.58f,  0.15f, 0.10f, 0.50f, 0.25f, 1.0f  },
-    { "Drunk Shuffle", 0.62f,  0.95f, 0.30f, 0.45f, 0.50f, 1.0f  },
-    { "Jungle Step",   0.55f,  0.10f, 0.05f, 0.60f, 0.15f, 1.0f  },
-    { "Ghost Town",    0.60f,  0.40f, 0.20f, 0.35f, 0.90f, 1.0f  },
-    { "Straight Up",   0.50f,  0.05f, 0.00f, 0.50f, 0.05f, 1.0f  },
+    // name              swing   hum    drag   sens   vel    wet
+    // ── Classic ───────────────────────────────────────────────────────────────
+    { "Donuts",          0.68f,  0.75f, 0.65f, 0.55f, 0.60f, 1.0f  },  // Heavy Dilla pocket
+    { "MPC Straight",    0.58f,  0.15f, 0.10f, 0.50f, 0.25f, 1.0f  },  // Clean boom bap
+    { "Drunk Shuffle",   0.62f,  0.95f, 0.30f, 0.45f, 0.50f, 1.0f  },  // Falling-apart feel
+    { "Jungle Step",     0.55f,  0.10f, 0.05f, 0.60f, 0.15f, 1.0f  },  // Tight Amen territory
+    { "Ghost Town",      0.60f,  0.40f, 0.20f, 0.35f, 0.90f, 1.0f  },  // Ghost hits everywhere
+    { "Straight Up",     0.50f,  0.05f, 0.00f, 0.50f, 0.05f, 1.0f  },  // Near-bypass
+    // ── Aggressive ────────────────────────────────────────────────────────────
+    { "Off The Grid",    0.80f,  1.00f, 0.90f, 0.50f, 0.70f, 1.0f  },  // Extreme swing+drag+chaos
+    { "Wrong Tempo",     0.75f,  0.85f, 1.00f, 0.45f, 0.40f, 1.0f  },  // Maximum drag, feels broken
+    { "Slipping Away",   0.70f,  1.00f, 0.50f, 0.40f, 0.80f, 1.0f  },  // High humanize dominates
+    { "Trap Drunk",      0.82f,  0.60f, 0.75f, 0.55f, 0.55f, 1.0f  },  // Heavy swing, moderate drag
 };
 static constexpr int kNumPresets = (int)(sizeof(kPresets) / sizeof(kPresets[0]));
 
@@ -86,7 +92,7 @@ private:
     //
     // ─────────────────────────────────────────────────────────────────────────
 
-    static constexpr int kMaxDisplaceMs = 200;  // max total displacement budget
+    static constexpr int kMaxDisplaceMs = 500;  // max total displacement budget
 
     int    ringSize         = 0;   // set in prepareToPlay (kRingSeconds * sr)
     int    lookaheadSamples = 0;   // reported latency = kMaxDisplaceMs converted

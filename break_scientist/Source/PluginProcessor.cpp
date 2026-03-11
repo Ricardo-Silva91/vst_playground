@@ -29,7 +29,7 @@ BreakScientistProcessor::createParameterLayout()
     std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
 
     params.push_back (std::make_unique<juce::AudioParameterFloat>
-        (kSwing,       "Swing",        0.50f, 0.75f, 0.58f));
+        (kSwing,       "Swing",        0.50f, 0.85f, 0.58f));
     params.push_back (std::make_unique<juce::AudioParameterFloat>
         (kHumanize,    "Humanize",     0.00f, 1.00f, 0.20f));
     params.push_back (std::make_unique<juce::AudioParameterFloat>
@@ -123,9 +123,9 @@ void BreakScientistProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     const float threshMult = 6.f - sensitivity * 4.5f;
 
     // Displacement amounts in samples
-    const int dragSamples         = (int)(drag * 0.080f * (float)currentSampleRate);
+    const int dragSamples         = (int)(drag * 0.200f * (float)currentSampleRate);
     const int swingDelaySamples   = (int)((swing - 0.5f) * 2.f * sixteenthSamples);
-    const int maxHumanizeSamples  = (int)(humanize * 0.035f * (float)currentSampleRate);
+    const int maxHumanizeSamples  = (int)(humanize * 0.080f * (float)currentSampleRate);
 
     // Hit window length — how many samples we copy per detected hit (~120ms)
     const int hitWindowSamples = (int)(0.120 * currentSampleRate);
