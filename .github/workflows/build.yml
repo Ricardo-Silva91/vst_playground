@@ -14,6 +14,7 @@ on:
           - pitch_wobble
           - through_the_wall
           - drum_smash
+          - break_scientist
       platforms:
         description: 'Platforms to build'
         required: true
