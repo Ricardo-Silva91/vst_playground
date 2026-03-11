@@ -69,21 +69,6 @@ int DrumSmashEditor::knobHitTest (juce::Point<float> pos) const
     return -1;
 }
 
-juce::Rectangle<float> DrumSmashEditor::presetBtnRect (int i) const
-{
-    float labelW = 48.f;
-    float available = (float)kW - labelW - 16.f;
-    float bw = available / (float)kNumPresets;
-    return { 8.f + labelW + i * bw, (float)kH - kPresetBarH + 3.f, bw - 2.f, kPresetBarH - 6.f };
-}
-
-int DrumSmashEditor::presetHitTest (juce::Point<float> pos) const
-{
-    for (int i = 0; i < kNumPresets; ++i)
-        if (presetBtnRect(i).contains (pos)) return i;
-    return -1;
-}
-
 // ── Constructor ───────────────────────────────────────────────────────────────
 DrumSmashEditor::DrumSmashEditor (DrumSmashProcessor& p)
     : AudioProcessorEditor (&p), proc (p)
@@ -99,7 +84,6 @@ DrumSmashEditor::DrumSmashEditor (DrumSmashProcessor& p)
     logoDrawable = juce::Drawable::createFromImageData (
         BinaryData::logo_transparent_svg, BinaryData::logo_transparent_svgSize);
 
-    selectedPreset = proc.getCurrentPresetIndex();
     for (int i = 0; i < kNumKnobs; ++i)
         cachedNorm[i] = getNorm (i);
 
@@ -116,8 +100,6 @@ void DrumSmashEditor::timerCallback()
         float v = getNorm (i);
         if (v != cachedNorm[i]) { cachedNorm[i] = v; changed = true; }
     }
-    int curr = proc.getCurrentPresetIndex();
-    if (curr != selectedPreset) { selectedPreset = curr; changed = true; }
     if (changed) repaint();
 }
 
@@ -276,38 +258,6 @@ void DrumSmashEditor::drawPlugin (juce::Graphics& g)
     }
 
 
-}
-
-// ── Preset bar ────────────────────────────────────────────────────────────────
-void DrumSmashEditor::drawPresetBar (juce::Graphics& g)
-{
-    float barY = (float)kH - kPresetBarH;
-    // Separator
-    g.setColour (juce::Colour(0xff1a1a1a));
-    g.fillRect (8.f, barY, (float)kW - 16.f, 1.f);
-    g.setColour (juce::Colour(0xff3a3a3a));
-    g.fillRect (8.f, barY+1.f, (float)kW - 16.f, 1.f);
-
-    g.setFont (shareTechMono.withHeight(7.5f));
-    g.setColour (cTextDim);
-    g.drawText ("PRESET", 8, (int)barY, 46, kPresetBarH, juce::Justification::centredLeft);
-
-    for (int i = 0; i < kNumPresets; ++i)
-    {
-        auto btn = presetBtnRect (i);
-        bool sel = (i == selectedPreset);
-        g.setColour (sel ? cAccent.withAlpha(0.85f) : juce::Colour(0xff252525));
-        g.fillRoundedRectangle (btn, 2.f);
-        g.setFont (shareTechMono.withHeight(6.5f));
-        g.setColour (sel ? juce::Colours::white : cTextDim);
-        g.drawText (kPresets[i].name, btn.toNearestInt(),
-                    juce::Justification::centred, false);
-        if (!sel)
-        {
-            g.setColour (juce::Colour(0xff3a3a3a));
-            g.drawRoundedRectangle (btn, 2.f, 0.5f);
-        }
-    }
 }
 
 // ── Knob ──────────────────────────────────────────────────────────────────────
