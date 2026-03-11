@@ -1,6 +1,8 @@
 #pragma once
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_dsp/juce_dsp.h>
+#include <vector>
+#include <array>
 
 // ── Preset struct ─────────────────────────────────────────────────────────────
 struct BreakPreset
@@ -8,7 +10,7 @@ struct BreakPreset
     const char* name;
     float swing;          // 0.5–0.75  (50%=straight, 75%=heavy shuffle)
     float humanize;       // 0–1       (random micro-offset depth)
-    float drag;           // 0–1       (consistent pull-back on all hits)
+    float drag;           // 0–1       (consistent pull-back on all hits, maps to 0–80ms)
     float sensitivity;    // 0–1       (transient detection threshold)
     float velocityVar;    // 0–1       (hit amplitude reshaping)
     float wetMix;         // 0–1
@@ -17,12 +19,12 @@ struct BreakPreset
 static const BreakPreset kPresets[] =
 {
     // name            swing   hum    drag   sens   vel    wet
-    { "Donuts",        0.68f,  0.75f, 0.65f, 0.55f, 0.60f, 1.0f  },  // Heavy Dilla
-    { "MPC Straight",  0.58f,  0.15f, 0.10f, 0.50f, 0.25f, 1.0f  },  // Clean boom bap
-    { "Drunk Shuffle", 0.62f,  0.95f, 0.30f, 0.45f, 0.50f, 1.0f  },  // Falling-apart feel
-    { "Jungle Step",   0.55f,  0.10f, 0.05f, 0.60f, 0.15f, 1.0f  },  // Tight Amen territory
-    { "Ghost Town",    0.60f,  0.40f, 0.20f, 0.35f, 0.90f, 1.0f  },  // Ghost hits everywhere
-    { "Straight Up",   0.50f,  0.05f, 0.00f, 0.50f, 0.05f, 1.0f  },  // Near-bypass
+    { "Donuts",        0.68f,  0.75f, 0.65f, 0.55f, 0.60f, 1.0f  },
+    { "MPC Straight",  0.58f,  0.15f, 0.10f, 0.50f, 0.25f, 1.0f  },
+    { "Drunk Shuffle", 0.62f,  0.95f, 0.30f, 0.45f, 0.50f, 1.0f  },
+    { "Jungle Step",   0.55f,  0.10f, 0.05f, 0.60f, 0.15f, 1.0f  },
+    { "Ghost Town",    0.60f,  0.40f, 0.20f, 0.35f, 0.90f, 1.0f  },
+    { "Straight Up",   0.50f,  0.05f, 0.00f, 0.50f, 0.05f, 1.0f  },
 };
 static constexpr int kNumPresets = (int)(sizeof(kPresets) / sizeof(kPresets[0]));
 
@@ -33,20 +35,17 @@ public:
     BreakScientistProcessor();
     ~BreakScientistProcessor() override;
 
-    void prepareToPlay  (double sampleRate, int samplesPerBlock) override;
+    void prepareToPlay   (double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
-    void processBlock   (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
+    void processBlock    (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
 
     juce::AudioProcessorEditor* createEditor() override;
     bool hasEditor() const override { return true; }
 
-    const juce::String getName() const override { return "Break Scientist"; }
-    bool acceptsMidi()  const override { return false; }
-    bool producesMidi() const override { return false; }
-    double getTailLengthSeconds() const override { return 0.15; }  // lookahead
-
-    // Report latency so host can compensate
-    int getLatencySamples() const { return lookaheadSamples; }
+    const juce::String getName()    const override { return "Break Scientist"; }
+    bool acceptsMidi()              const override { return false; }
+    bool producesMidi()             const override { return false; }
+    double getTailLengthSeconds()   const override { return 1.0; }
 
     int  getNumPrograms()    override { return kNumPresets; }
     int  getCurrentProgram() override { return currentPreset; }
@@ -64,63 +63,67 @@ private:
     juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
     void applyPreset (int index);
 
-    // ── Lookahead buffer ──────────────────────────────────────────────────────
-    // We buffer incoming audio by `lookaheadSamples` so we can push hits
-    // either forward (earlier) or backward (later) relative to the grid.
-    static constexpr int kMaxLookaheadMs = 150;
-    int lookaheadSamples = 0;
+    // ── Architecture overview ─────────────────────────────────────────────────
+    //
+    // We use a large pre-roll (input) ring buffer — 1 second at the current
+    // sample rate. All incoming audio is written into it continuously.
+    //
+    // The output is assembled into a matching output ring buffer, initialised
+    // to silence. When a transient is detected we:
+    //   1. Note the onset position in the input ring buffer.
+    //   2. Calculate a total displacement (drag + swing + humanize).
+    //   3. Copy a window of audio (~120ms) from the input ring buffer,
+    //      scaled by the velocity gain, into the output ring buffer at
+    //      (onset_position + displacement), using a Hann-window envelope
+    //      to ensure clean fade-in and fade-out on every hit.
+    //   4. Mark those output positions in ringOutMask so the original
+    //      pass-through audio is suppressed there (avoiding doubling).
+    //
+    // The output ring buffer read position always lags the write position by
+    // exactly `lookaheadSamples`. This is reported to the host as latency so
+    // the DAW compensates automatically during playback.
+    // After consolidating/freezing the track the latency offset disappears.
+    //
+    // ─────────────────────────────────────────────────────────────────────────
 
-    // Circular lookahead buffer — stereo
-    std::vector<float> lookaheadL;
-    std::vector<float> lookaheadR;
-    int lookaheadWritePos = 0;
+    static constexpr int kMaxDisplaceMs = 200;  // max total displacement budget
+
+    int    ringSize         = 0;   // set in prepareToPlay (kRingSeconds * sr)
+    int    lookaheadSamples = 0;   // reported latency = kMaxDisplaceMs converted
+
+    // Input ring — raw incoming audio, written every block
+    std::vector<float> ringInL, ringInR;
+    int ringWritePos = 0;
+
+    // Output ring — pre-filled with silence; hit copies are added here
+    // at displaced positions. Pass-through fills any unmasked positions.
+    std::vector<float> ringOutL, ringOutR;
+
+    // Suppression mask: value in [0,1]. 1 = fully suppress the original
+    // pass-through signal at this position (a displaced hit is there instead).
+    std::vector<float> ringOutMask;
+
+    int ringReadPos = 0;   // lags ringWritePos by lookaheadSamples
 
     // ── Transient detection ───────────────────────────────────────────────────
-    // Envelope follower to track RMS level; onset detected when instantaneous
-    // energy exceeds a multiple of the running RMS.
-    float envelopeL      = 0.f;
-    float envelopeR      = 0.f;
-    float runningRms     = 0.f;
-    float rmsSmooth      = 0.f;
-    bool  inTransient    = false;
-    int   transientCooldown = 0;   // samples to ignore after an onset
+    float envelope        = 0.f;
+    float rmsSmooth       = 0.f;
+    float runningRms      = 0.f;
+    bool  inTransient     = false;
+    int   cooldownSamples = 0;
 
-    // ── Hit displacement queue ────────────────────────────────────────────────
-    // When a transient is detected, we schedule a "hit event" to be played
-    // back at a displaced time via a short output buffer.
-    struct HitEvent
-    {
-        int    outputSampleOffset;  // samples from now to play this hit
-        float  gainScale;           // velocity variance applied here
-        bool   active = false;
-    };
-    static constexpr int kMaxHits = 32;
-    HitEvent hitQueue[kMaxHits];
-    int hitQueueCount = 0;
-
-    // Output crossfade buffer — holds the displaced hit being written out
-    static constexpr int kHitBufSize = 8192;
-    std::vector<float> hitBufL;
-    std::vector<float> hitBufR;
-    int   hitBufWritePos  = 0;
-    int   hitBufReadPos   = 0;
-    int   hitBufRemaining = 0;   // samples left to output from current hit
-    float crossfadeLen    = 0.f; // in samples, for fade in/out
-
-    // ── Swing / timing state ──────────────────────────────────────────────────
-    // 16th-note grid tracking — updated per block from host BPM if available,
-    // otherwise estimated from detected transient inter-onset intervals.
+    // ── Swing / grid ──────────────────────────────────────────────────────────
     double currentBpm        = 120.0;
-    double sixteenthSamples  = 0.0;   // samples per 16th note
-    int    gridPhase         = 0;     // sample counter within current 16th
-    int    sixteenthCount    = 0;     // which 16th note we're on (0,1,2,3...)
+    double sixteenthSamples  = 0.0;
+    int    sixteenthCount    = 0;
+    int    gridPhase         = 0;
 
-    // Inter-onset interval estimator (fallback when no host BPM)
-    int    lastOnsetSample   = 0;
-    double ioiEstimate       = 0.0;   // running average inter-onset interval
+    // IOI-based BPM fallback
+    int    lastOnsetRingPos  = -1;
+    double ioiEstimate       = 0.0;
     int    ioiCount          = 0;
 
-    // ── RNG for humanize ─────────────────────────────────────────────────────
+    // ── RNG ───────────────────────────────────────────────────────────────────
     juce::Random rng;
 
     int    currentPreset     = 0;
