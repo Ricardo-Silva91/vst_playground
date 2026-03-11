@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Break Scientist — Lizard VST</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    :root { --accent: #9b59f5; --accent-rgb: 155,89,245; }
+    .hero-face .knob {
+      background: radial-gradient(circle at 35% 30%, #3a3248 0%, #22203a 45%, #0e0c18 100%);
+    }
+    .hero-face .knob::before {
+      opacity: 0.18;
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <nav class="nav">
+    <a href="index.html">&#8592; All Plugins</a>
+    <span class="sep">/</span>
+    <span>Break Scientist</span>
+  </nav>
+
+  <div class="hero">
+    <div class="screw tl"></div><div class="screw tr"></div>
+    <div class="screw bl"></div><div class="screw br"></div>
+    <div class="hero-inner">
+      <div class="hero-face">
+        <span class="hero-num">MODULE 05 / 05</span>
+        <div class="hero-title">Break<br>Scientist</div>
+        <div class="knob-row">
+          <div class="knob-unit"><div class="knob" style="transform:rotate(55deg)"></div><span class="knob-label">Swing</span></div>
+          <div class="knob-unit"><div class="knob" style="transform:rotate(25deg)"></div><span class="knob-label">Hum</span></div>
+          <div class="knob-unit"><div class="knob" style="transform:rotate(70deg)"></div><span class="knob-label">Drag</span></div>
+          <div class="knob-unit"><div class="knob" style="transform:rotate(-15deg)"></div><span class="knob-label">Vel</span></div>
+          <div class="knob-unit"><div class="knob" style="transform:rotate(40deg)"></div><span class="knob-label">Wet</span></div>
+        </div>
+        <div class="hero-cat">
+          <div class="cat-dot" style="background:#9b59f5;box-shadow:0 0 5px rgba(155,89,245,0.9);"></div>
+          Groove Processor
+        </div>
+        <img src="assets/logo.png" alt="Lizard VST" class="hero-logo">
+      </div>
+      <div class="hero-body">
+        <div class="hero-tagline">Make it breathe.</div>
+        <p class="hero-desc">
+          Break Scientist detects transients in your drum break and displaces them in time — pushing hits earlier or later than where they originally landed, then reshaping their velocities. <strong>The break starts to feel like it was programmed by a human, not quantised to a grid.</strong> Drop it on a drum break channel, pick a preset, consolidate the track — done.
+        </p>
+        <div class="hero-dl">
+          <a class="dl-btn mac" href="https://github.com/Ricardo-Silva91/vst_playground/releases/download/break_scientist-latest/Break_Scientist.vst3_Mac.zip">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 1 0 20A10 10 0 0 1 12 2z"/><path d="M12 8v8M8 14l4 4 4-4"/></svg>macOS
+          </a>
+          <a class="dl-btn win" href="https://github.com/Ricardo-Silva91/vst_playground/releases/download/break_scientist-latest/Break_Scientist.vst3_Windows.zip">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8"/><rect x="13" y="3" width="8" height="8"/><rect x="3" y="13" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/></svg>Windows
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOW IT WORKS -->
+  <div class="content-grid wide">
+    <div class="panel">
+      <div class="panel-title">How It Works</div>
+      <div class="chain">
+        <span class="chain-node">Input</span><span class="chain-arrow">&#8250;</span>
+        <span class="chain-node highlight">Transient Detection</span><span class="chain-arrow">&#8250;</span>
+        <span class="chain-node highlight">Time Displacement</span><span class="chain-arrow">&#8250;</span>
+        <span class="chain-node highlight">Velocity Reshape</span><span class="chain-arrow">&#8250;</span>
+        <span class="chain-node highlight">Wet Mix</span><span class="chain-arrow">&#8250;</span>
+        <span class="chain-node">Output</span>
+      </div>
+      <p class="chain-note">
+        The plugin uses a lookahead buffer (up to 500ms depending on settings) to detect drum transients before they arrive at the output. Each detected hit is then displaced in time according to the Swing, Humanize, and Drag values, and its amplitude is reshaped by Vel Variance. The lookahead is reported to the host as latency — the host compensates automatically during playback, so timing stays in sync while you audition. <strong>Consolidate or freeze the track before mixing</strong> — the consolidated audio has no latency offset and is the real output. Live monitoring is fine for dialling in the feel.
+      </p>
+    </div>
+  </div>
+
+  <!-- PARAMETERS -->
+  <div class="content-grid">
+    <div class="panel">
+      <div class="panel-title">Timing Section</div>
+      <div class="param-list">
+        <div class="param-card">
+          <div class="param-name">Swing</div>
+          <p class="param-desc">Pushes every other 16th note later. <strong>50% is straight</strong>, 75% is a heavy shuffle, 85% is broken and extreme — the odd notes land so late the rhythm starts to feel inside-out.</p>
+          <div class="param-range">50% = straight &rarr; 85% = extreme shuffle</div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">Humanize</div>
+          <p class="param-desc">Adds a random micro-offset to each hit, up to &plusmn;80ms. <strong>Low values add subtle pocket feel</strong>; high values make the break sound like it's barely holding together.</p>
+          <div class="param-range">Range: 0 &rarr; &plusmn;80ms per hit</div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">Drag</div>
+          <p class="param-desc">Pulls every hit behind the beat, from subtle (a few ms) to extreme (up to 200ms). <strong>This is the Dilla thing</strong> — a consistent lateness that makes the groove feel heavy. At high values the break starts to feel like a different tempo entirely.</p>
+          <div class="param-range">Range: 0 &rarr; 200ms behind the beat</div>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Character Section</div>
+      <div class="param-list">
+        <div class="param-card">
+          <div class="param-name">Sensitivity</div>
+          <p class="param-desc">Controls how aggressively the plugin detects drum hits. <strong>Lower for dense, washy breaks</strong>; higher for sparse, punchy ones. If hits are being missed or double-triggered, adjust this first.</p>
+          <div class="param-range">Low = permissive &rarr; High = strict</div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">Vel Variance</div>
+          <p class="param-desc">Randomly reshapes the volume of each hit after it's been displaced. <strong>Creates ghost hits and accents</strong> without any compression or editing — the dynamics variation emerges from the plugin, not from the source material.</p>
+          <div class="param-range">Range: 0 (no change) &rarr; 1 (full randomisation)</div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">Wet Mix</div>
+          <p class="param-desc">Blends the processed signal with the original. <strong>Below 100% creates a flamming effect</strong> as timed and untimed versions overlap — this can be a sound in itself on certain breaks.</p>
+          <div class="param-range">Range: 0% (dry) &rarr; 100% (fully processed)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRESETS -->
+  <div class="content-grid wide">
+    <div class="panel">
+      <div class="panel-title">Presets</div>
+      <div class="preset-grid" style="grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));">
+        <div class="preset-card">
+          <div class="preset-name">Donuts</div>
+          <p class="preset-desc">Heavy Dilla pocket. High drag, high humanize, strong swing. Hits sit noticeably behind the beat — nothing lands where you expect, everything grooves harder for it.</p>
+        </div>
+        <div class="preset-card">
+          <div class="preset-name">MPC Straight</div>
+          <p class="preset-desc">Classic boom bap. Clean swing, minimal humanize, almost no drag. The break swings but stays disciplined. Good starting point for straightforward hip-hop.</p>
+        </div>
+        <div class="preset-card">
+          <div class="preset-name">Drunk Shuffle</div>
+          <p class="preset-desc">Maximum looseness. High humanize, moderate swing, light drag. Works well on slower tempos where the timing variation has room to breathe.</p>
+        </div>
+        <div class="preset-card">
+          <div class="preset-name">Jungle Step</div>
+          <p class="preset-desc">Tight and aggressive. Light swing, very low humanize, almost no drag. Closer to Amen territory than boom bap — fast and locked-in.</p>
+        </div>
+        <div class="preset-card">
+          <div class="preset-name">Ghost Town</div>
+          <p class="preset-desc">Velocity chaos. High vel variance, subtle timing shift. Quiet ghost hits appear between loud accents — the groove lives in the dynamics more than the timing.</p>
+        </div>
+        <div class="preset-card">
+          <div class="preset-name">Straight Up</div>
+          <p class="preset-desc">Near-bypass. Minimal everything — just a whisper of humanize to take the sterile edge off a perfectly quantised break. Use when you want the plugin in the chain but don't want to hear it working.</p>
+        </div>
+        <div class="preset-card">
+          <div class="preset-name">Off The Grid</div>
+          <p class="preset-desc">Maximum chaos. Extreme swing, full humanize, near-maximum drag. The break barely resembles its original rhythm. Best on slower tempos where offsets have room to breathe.</p>
+        </div>
+        <div class="preset-card">
+          <div class="preset-name">Wrong Tempo</div>
+          <p class="preset-desc">Maximum drag. Every hit pulled back as far as possible — the break feels like it belongs to a slower song. Especially effective on fast breaks at 140+ BPM.</p>
+        </div>
+        <div class="preset-card">
+          <div class="preset-name">Slipping Away</div>
+          <p class="preset-desc">Humanize takes over. High randomness dominates — each hit lands somewhere different every loop. No two passes sound the same. Good for chopped loops wanting variation without editing.</p>
+        </div>
+        <div class="preset-card">
+          <div class="preset-name">Trap Drunk</div>
+          <p class="preset-desc">Heavy swing for modern rhythms. High swing (0.82) with solid drag — sits between classic Dilla feel and modern trap grid. Odd 16ths land very late; even ones stay mostly on time.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- USE CASES -->
+  <div class="content-grid wide">
+    <div class="panel">
+      <div class="panel-title">Use Cases</div>
+      <div class="usecase-list">
+        <div class="usecase-card">
+          <div class="usecase-title">Sampled drum breaks</div>
+          <p class="usecase-body">Drop it directly on a break channel. The plugin detects the transients and displaces them in real time — <strong>no manual chopping, no re-editing</strong>. Pick a preset, audition, consolidate. The Amen break becomes boom bap; the Think break starts to breathe.</p>
+          <div class="usecase-settings">Recommended preset: Donuts or MPC Straight as a starting point</div>
+        </div>
+        <div class="usecase-card">
+          <div class="usecase-title">Adding pocket to programmed drums</div>
+          <p class="usecase-body">Even a perfectly programmed beat can feel mechanical. At low Humanize and modest Drag, Break Scientist adds the <strong>subliminal imprecision of a human drummer</strong> without any obviously audible timing shift. The beat still sits in the pocket — it just feels like it was played, not clicked in.</p>
+          <div class="usecase-settings">Recommended preset: Straight Up or MPC Straight / Humanize: 0.1–0.2</div>
+        </div>
+        <div class="usecase-card">
+          <div class="usecase-title">Layering processed and dry</div>
+          <p class="usecase-body">Use Wet Mix below 100% to blend the displaced break with the original. The two versions phase against each other, <strong>creating a flamming effect</strong> that can range from subtle thickening to deliberate rhythmic widening. Automate the Wet Mix to bring the effect in and out.</p>
+          <div class="usecase-settings">Wet Mix: 40–70% / keep Swing and Drag moderate to avoid harsh flamming</div>
+        </div>
+        <div class="usecase-card">
+          <div class="usecase-title">Half-time feel from fast breaks</div>
+          <p class="usecase-body">Crank Drag to its maximum on a break running at 140–160 BPM. The consistent behind-the-beat displacement <strong>makes the break feel like it belongs at half the tempo</strong> without changing the actual speed. The Wrong Tempo preset is built exactly for this.</p>
+          <div class="usecase-settings">Recommended preset: Wrong Tempo / works best at 130+ BPM</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TIPS -->
+  <div class="content-grid wide">
+    <div class="panel">
+      <div class="panel-title">Tips and Workflow</div>
+      <div class="tip-list">
+        <div class="tip">
+          <span class="tip-icon">&#9654;</span>
+          <p class="tip-text"><strong>Always consolidate before mixing.</strong> The lookahead buffer is reported as latency to the host, which compensates automatically during playback. But the live output should not be used as a final mix source — consolidate or freeze the track first. The consolidated audio is the real output with no offset.</p>
+        </div>
+        <div class="tip">
+          <span class="tip-icon">&#9654;</span>
+          <p class="tip-text"><strong>Adjust Sensitivity for your break.</strong> Dense, washy breaks (Apache, Funky Drummer) need lower Sensitivity so the transient detector doesn't fire on every smear. Sparse, punchy breaks (Amen, Think) can take higher Sensitivity for tight per-hit displacement.</p>
+        </div>
+        <div class="tip">
+          <span class="tip-icon">&#9654;</span>
+          <p class="tip-text"><strong>Drag is the most powerful knob.</strong> Even small Drag values — 20–40ms — dramatically change how a break feels without sounding obviously processed. Start here before touching Swing or Humanize.</p>
+        </div>
+        <div class="tip">
+          <span class="tip-icon">&#9654;</span>
+          <p class="tip-text"><strong>Humanize changes every loop.</strong> Unlike Swing and Drag, which are deterministic, Humanize adds a random offset each time the break plays through. If you want the groove to be consistent loop to loop, keep Humanize at zero and use only Swing and Drag.</p>
+        </div>
+        <div class="tip">
+          <span class="tip-icon">&#9654;</span>
+          <p class="tip-text"><strong>Ghost Town preset under a tight kick.</strong> Layer a copy of your drum break running through Ghost Town at low volume under your primary kick and snare track. The ghost hits and velocity variation fill in the rhythmic space without competing with the main elements.</p>
+        </div>
+        <div class="tip">
+          <span class="tip-icon">&#9654;</span>
+          <p class="tip-text"><strong>FL Studio: right-click the parameter name label</strong> (not the slider) in the generic editor to create an automation clip. Automating Wet Mix or Drag over a section is a quick way to bring the groove effect in and out without committing to a single setting for the whole track.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="screw tl"></div><div class="screw tr"></div>
+    <span class="footer-text">Lizard VST &nbsp;&#183;&nbsp; Free VST3 &nbsp;&#183;&nbsp; macOS &amp; Windows</span>
+    <a class="footer-link" href="https://github.com/Ricardo-Silva91/vst_playground" target="_blank">&#8599; See on GitHub</a>
+  </footer>
+
+</div>
+</body>
+</html>

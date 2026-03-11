@@ -264,7 +264,7 @@ footer {
 .hero-num { font-family: var(--mono); font-size: 8px; letter-spacing: 0.2em; color: var(--text-dim); }
 .hero-title { font-family: var(--sans); font-weight: 700; font-size: 2.2rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--silk); text-shadow: 0 1px 0 rgba(255,255,255,0.07), 0 -1px 0 rgba(0,0,0,0.6); line-height: 1.1; }
 .hero-cat { display: flex; align-items: center; gap: 0.5rem; font-family: var(--mono); font-size: 9px; letter-spacing: 0.2em; color: var(--text-dim); }
-.knob-row { display: flex; gap: 1.2rem; justify-content: center; padding: 0.5rem 0; }
+.knob-row { display: flex; gap: 1.2rem; justify-content: center; padding: 0.5rem 0; flex-wrap: wrap; }
 .knob-unit { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; }
 /* Detail page knob — smaller than index knob, accent-tinted pointer */
 .hero-face .knob {
