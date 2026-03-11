@@ -23,37 +23,22 @@ private:
     void mouseWheelMove   (const juce::MouseEvent&,
                            const juce::MouseWheelDetails&) override;
 
-    // ── Drawing helpers ───────────────────────────────────────────────────
     void drawChassis   (juce::Graphics&);
     void drawScrews    (juce::Graphics&);
     void drawScanLines (juce::Graphics&, juce::Rectangle<float>, float opacity);
-    void drawFacePanel (juce::Graphics&);
-    void drawContent   (juce::Graphics&);
-    void drawFaceKnob  (juce::Graphics&, int idx);
-    void drawSection   (juce::Graphics&, int sectionIdx, juce::Rectangle<float> area);
-    void drawSliderRow (juce::Graphics&, int paramIdx, juce::Rectangle<float> row,
-                        bool shaded);
+    void drawPlugin    (juce::Graphics&);
+    void drawKnob      (juce::Graphics&, float cx, float cy, float norm,
+                        const juce::String& label, const juce::String& val);
     void drawPresetBar (juce::Graphics&);
-    void drawLogoAndBadge (juce::Graphics&);
 
-    // ── Layout ────────────────────────────────────────────────────────────
-    juce::Rectangle<float> facePanel()    const;
-    juce::Rectangle<float> contentPanel() const;
-    juce::Rectangle<float> presetBarRect() const;
-    juce::Rectangle<float> sectionsRect() const;
+    juce::Point<float> knobCenter   (int idx) const;
+    int                knobHitTest  (juce::Point<float>) const;
+    int                presetHitTest(juce::Point<float>) const;
+    juce::Rectangle<float> presetBtnRect(int i) const;
 
-    juce::Point<float> faceKnobCenter (int idx) const;
-    int  faceKnobHitTest (juce::Point<float>) const;
-    int  sliderHitTest   (juce::Point<float>) const;
-    int  presetHitTest   (juce::Point<float>) const;
-    juce::Rectangle<float> sliderRowRect (int paramIdx) const;
-    juce::Rectangle<float> sliderThumb   (int paramIdx) const;
-    juce::Rectangle<float> presetRect    (int i) const;
-
-    // ── Param helpers ─────────────────────────────────────────────────────
-    float getNorm (int paramIdx) const;
-    void  setNorm (int paramIdx, float norm);
-    juce::String getValueText (int paramIdx) const;
+    float        getNorm     (int knobIdx) const;
+    void         setNorm     (int knobIdx, float norm);
+    juce::String getValueText(int knobIdx) const;
 
     DrumSmashProcessor& proc;
 
@@ -61,20 +46,12 @@ private:
     juce::Font shareTechMono;
     std::unique_ptr<juce::Drawable> logoDrawable;
 
-    // Cached normalised values for repaint-on-change
-    float cachedNorm[21] = {};
+    float cachedNorm[5] = {};
+    int   selectedPreset = 0;
 
-    // Drag state — face knobs
-    int   dragFaceKnob   = -1;
-    float dragStartY     = 0.f;
-    float dragStartVal   = 0.f;
-
-    // Drag state — content sliders
-    int   dragSlider     = -1;
-    float dragSliderStartX   = 0.f;
-    float dragSliderStartVal = 0.f;
-
-    int selectedPreset = 0;
+    int   draggingKnob = -1;
+    float dragStartY   = 0.f;
+    float dragStartVal = 0.f;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DrumSmashEditor)
 };
