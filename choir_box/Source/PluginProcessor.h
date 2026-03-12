@@ -3,48 +3,65 @@
 #include <juce_dsp/juce_dsp.h>
 #include <array>
 #include <vector>
+#include <complex>
 
-// ── PitchShifter — dual-grain overlap-add ─────────────────────────────────────
-// Two grains read from a circular delay buffer at a speed determined by
-// pitchRatio. Each grain is windowed with a Hann envelope. When a grain
-// completes its window it jumps forward so the two grains are always
-// kGrainSize apart and their envelopes always sum to 1.0 (no gaps, no clicks).
-//
-// kBufSize  — delay buffer length, must be power of 2, >> kGrainSize
-// kGrainSize — length of each crossfade grain in samples
+// ── PitchShifter — correct phase vocoder ─────────────────────────────────────
+// Uses JUCE's FFT with proper in-place real-only packing/unpacking.
+// Processes audio in hop-sized blocks with 4x overlap.
+// Latency = kFftSize samples (~46ms @44.1k), reported to host.
 class PitchShifter
 {
 public:
-    static constexpr int kBufSize   = 16384;  // power of 2, ~370ms @44.1k
-    static constexpr int kGrainSize = 2048;   // ~46ms — long enough for smoothness
+    static constexpr int kFftOrder  = 11;           // 2^11 = 2048
+    static constexpr int kFftSize   = 1 << kFftOrder;
+    static constexpr int kHopSize   = kFftSize / 4; // 4x overlap
+    static constexpr int kNumBins   = kFftSize / 2 + 1;
 
     PitchShifter();
 
     void  prepare (double sampleRate);
     void  reset();
     void  setPitchRatio (float ratio);
+
+    // Push one input sample, retrieve one output sample (sample-by-sample interface)
     float processSample (float in);
 
 private:
+    void processFrame();
+
     float pitchRatio = 1.0f;
 
-    // Circular input buffer
-    std::array<float, kBufSize> buf {};
-    int writePos = 0;
+    // Input accumulation — collect kHopSize samples then process
+    std::vector<float> inFifo;
+    int fifoIdx = 0;
 
-    // Two grains — each has a floating-point read position and an envelope phase
-    struct Grain
-    {
-        float readPos  = 0.f;   // fractional position in buf
-        int   envPos   = 0;     // position within Hann window (0..kGrainSize-1)
-    };
-    Grain grains[2];
+    // Overlap-add output buffer
+    std::vector<float> outAccum;     // accumulation buffer
+    std::vector<float> outFifo;      // ready-to-read output
+    int outIdx = 0;
 
-    // Hann window lookup table
-    std::array<float, kGrainSize> hann {};
+    // Analysis window history (last kFftSize input samples)
+    std::vector<float> inputHistory;
+    int historyIdx = 0;
 
-    // Read one sample from buf at a fractional position (linear interp)
-    float readAt (float pos) const;
+    // FFT
+    std::unique_ptr<juce::dsp::FFT> fft;
+    std::vector<float> fftBuffer;    // 2*kFftSize, in-place work buffer
+
+    // Phase tracking
+    std::vector<float> lastAnalysisPhase;
+    std::vector<float> synthPhase;
+
+    // Hann window
+    std::vector<float> window;
+
+    // Magnitude and true-frequency arrays (reused each frame)
+    std::vector<float> mag;
+    std::vector<float> trueFreq;
+    std::vector<float> outMag;
+    std::vector<float> outFreq;
+
+    double sampleRate = 44100.0;
 };
 
 // ── Presets ───────────────────────────────────────────────────────────────────
@@ -93,7 +110,7 @@ public:
     const juce::String getName() const override { return "Choir Box"; }
     bool acceptsMidi()  const override { return false; }
     bool producesMidi() const override { return false; }
-    double getTailLengthSeconds() const override { return 0.05; }
+    double getTailLengthSeconds() const override { return 0.1; }
 
     int  getNumPrograms()    override { return kNumPresets; }
     int  getCurrentProgram() override { return currentPreset; }

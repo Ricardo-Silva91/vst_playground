@@ -17,90 +17,185 @@ static const juce::String kMasterOut     = "masterOut";
 
 // ── PitchShifter ──────────────────────────────────────────────────────────────
 PitchShifter::PitchShifter()
+    : fft (std::make_unique<juce::dsp::FFT> (kFftOrder))
 {
-    // Build Hann window
-    for (int i = 0; i < kGrainSize; ++i)
-        hann[(size_t)i] = 0.5f * (1.f - std::cos (
-            2.f * juce::MathConstants<float>::pi
-            * (float)i / (float)(kGrainSize - 1)));
+    inFifo            .resize ((size_t)kHopSize, 0.f);
+    outAccum          .resize ((size_t)kFftSize * 2, 0.f);
+    outFifo           .resize ((size_t)kHopSize, 0.f);
+    inputHistory      .resize ((size_t)kFftSize, 0.f);
+    fftBuffer         .resize ((size_t)kFftSize * 2, 0.f);
+    lastAnalysisPhase .resize ((size_t)kNumBins, 0.f);
+    synthPhase        .resize ((size_t)kNumBins, 0.f);
+    window            .resize ((size_t)kFftSize, 0.f);
+    mag               .resize ((size_t)kNumBins, 0.f);
+    trueFreq          .resize ((size_t)kNumBins, 0.f);
+    outMag            .resize ((size_t)kNumBins, 0.f);
+    outFreq           .resize ((size_t)kNumBins, 0.f);
+
+    // Hann window — sqrt-Hann for perfect reconstruction with 4x overlap
+    for (int i = 0; i < kFftSize; ++i)
+    {
+        float h = 0.5f * (1.f - std::cos (2.f * juce::MathConstants<float>::pi
+                                           * (float)i / (float)(kFftSize - 1)));
+        window[(size_t)i] = std::sqrt (h);
+    }
 }
 
-void PitchShifter::prepare (double /*sampleRate*/)
+void PitchShifter::prepare (double sr)
 {
+    sampleRate = sr;
     reset();
 }
 
 void PitchShifter::reset()
 {
-    buf.fill (0.f);
-    writePos = 0;
-
-    // Initialise grains so they are exactly half a grain apart in their
-    // envelope phases — grain 0 starts at the beginning of its window,
-    // grain 1 starts at the halfway point.
-    grains[0].readPos = 0.f;
-    grains[0].envPos  = 0;
-    grains[1].readPos = (float)(kGrainSize / 2);
-    grains[1].envPos  = kGrainSize / 2;
+    std::fill (inFifo.begin(),            inFifo.end(),            0.f);
+    std::fill (outAccum.begin(),          outAccum.end(),          0.f);
+    std::fill (outFifo.begin(),           outFifo.end(),           0.f);
+    std::fill (inputHistory.begin(),      inputHistory.end(),      0.f);
+    std::fill (fftBuffer.begin(),         fftBuffer.end(),         0.f);
+    std::fill (lastAnalysisPhase.begin(), lastAnalysisPhase.end(), 0.f);
+    std::fill (synthPhase.begin(),        synthPhase.end(),        0.f);
+    fifoIdx   = 0;
+    outIdx    = 0;
+    historyIdx = 0;
 }
 
-void PitchShifter::setPitchRatio (float ratio)
-{
-    pitchRatio = ratio;
-}
-
-float PitchShifter::readAt (float pos) const
-{
-    // Wrap into buffer
-    while (pos >= (float)kBufSize) pos -= (float)kBufSize;
-    while (pos <  0.f)             pos += (float)kBufSize;
-
-    int   i0 = (int)pos & (kBufSize - 1);
-    int   i1 = (i0 + 1) & (kBufSize - 1);
-    float fr = pos - std::floor (pos);
-    return buf[(size_t)i0] * (1.f - fr) + buf[(size_t)i1] * fr;
-}
+void PitchShifter::setPitchRatio (float ratio) { pitchRatio = ratio; }
 
 float PitchShifter::processSample (float in)
 {
-    // Write new sample
-    buf[(size_t)(writePos & (kBufSize - 1))] = in;
+    // Accumulate input into hop-sized fifo
+    inFifo[(size_t)fifoIdx] = in;
+    ++fifoIdx;
 
-    float out = 0.f;
-
-    for (int g = 0; g < 2; ++g)
+    if (fifoIdx >= kHopSize)
     {
-        Grain& gr = grains[g];
+        fifoIdx = 0;
 
-        // Apply Hann envelope and accumulate
-        float env = hann[(size_t)gr.envPos];
-        out += readAt (gr.readPos) * env;
-
-        // Advance read position by pitchRatio (fractional sample stepping)
-        gr.readPos += pitchRatio;
-
-        // Advance envelope position
-        gr.envPos++;
-
-        // When this grain completes its window, reset it:
-        // - restart the envelope from 0
-        // - jump the read position forward by kGrainSize relative to
-        //   the current write position so it stays anchored to fresh audio.
-        //   The offset between read and write gives us the effective delay;
-        //   we keep it at kGrainSize samples so the grain always has
-        //   a full window of valid input behind it.
-        if (gr.envPos >= kGrainSize)
+        // Copy hop into history ring buffer
+        for (int i = 0; i < kHopSize; ++i)
         {
-            gr.envPos  = 0;
-            gr.readPos = (float)(writePos - kGrainSize);
+            inputHistory[(size_t)(historyIdx & (kFftSize - 1))] = inFifo[(size_t)i];
+            ++historyIdx;
+        }
+
+        processFrame();
+
+        // Shift output accum down by one hop, expose next hop in outFifo
+        for (int i = 0; i < kHopSize; ++i)
+            outFifo[(size_t)i] = outAccum[(size_t)i];
+
+        // Shift accumulator
+        std::copy (outAccum.begin() + kHopSize, outAccum.end(), outAccum.begin());
+        std::fill (outAccum.end() - kHopSize, outAccum.end(), 0.f);
+
+        outIdx = 0;
+    }
+
+    // Read from current output hop
+    float out = 0.f;
+    if (outIdx < kHopSize)
+        out = outFifo[(size_t)outIdx];
+    ++outIdx;
+
+    return out;
+}
+
+void PitchShifter::processFrame()
+{
+    const float twoPi = 2.f * juce::MathConstants<float>::pi;
+
+    // ── 1. Build windowed analysis frame from input history ───────────────────
+    // inputHistory is a ring buffer; newest sample is at historyIdx-1
+    for (int i = 0; i < kFftSize; ++i)
+    {
+        int srcIdx = (historyIdx - kFftSize + i) & (kFftSize - 1);
+        fftBuffer[(size_t)i]            = inputHistory[(size_t)srcIdx] * window[(size_t)i];
+        fftBuffer[(size_t)(i + kFftSize)] = 0.f;
+    }
+
+    // ── 2. Forward FFT (in-place, real-only) ──────────────────────────────────
+    // After this call, fftBuffer contains interleaved re/im pairs for bins 0..kFftSize-1
+    // JUCE packs: [re0, re(N/2), re1, im1, re2, im2, ...]
+    // i.e. bin 0 dc = fftBuffer[0], bin N/2 nyquist = fftBuffer[1],
+    //      bin k  = (fftBuffer[2k], fftBuffer[2k+1]) for k=1..N/2-1
+    fft->performRealOnlyForwardTransform (fftBuffer.data(), true);
+
+    // ── 3. Unpack bins, compute magnitude and true frequency ──────────────────
+    const float expectedPhaseInc = twoPi * (float)kHopSize / (float)kFftSize;
+
+    // Bin 0 (DC)
+    mag[(size_t)0]      = std::fabs (fftBuffer[0]);
+    trueFreq[(size_t)0] = 0.f;
+    lastAnalysisPhase[(size_t)0] = 0.f;
+
+    // Bin kFftSize/2 (Nyquist) — packed at index 1
+    mag[(size_t)(kNumBins - 1)]      = std::fabs (fftBuffer[1]);
+    trueFreq[(size_t)(kNumBins - 1)] = juce::MathConstants<float>::pi;
+    lastAnalysisPhase[(size_t)(kNumBins - 1)] = 0.f;
+
+    for (int k = 1; k < kNumBins - 1; ++k)
+    {
+        float re = fftBuffer[(size_t)(k * 2)];
+        float im = fftBuffer[(size_t)(k * 2 + 1)];
+
+        mag[(size_t)k] = std::sqrt (re * re + im * im);
+
+        float phase = std::atan2 (im, re);
+
+        // Phase difference from last frame
+        float delta = phase - lastAnalysisPhase[(size_t)k];
+        lastAnalysisPhase[(size_t)k] = phase;
+
+        // Remove expected phase advance, wrap to -pi..pi
+        delta -= (float)k * expectedPhaseInc;
+        delta  = delta - twoPi * std::round (delta / twoPi);
+
+        // True frequency of this bin (in radians per sample, normalised to bin)
+        trueFreq[(size_t)k] = ((float)k + delta / expectedPhaseInc);
+    }
+
+    // ── 4. Pitch shift — map bins to new positions ────────────────────────────
+    std::fill (outMag.begin(),  outMag.end(),  0.f);
+    std::fill (outFreq.begin(), outFreq.end(), 0.f);
+
+    for (int k = 0; k < kNumBins; ++k)
+    {
+        int dest = (int)std::round ((float)k * pitchRatio);
+        if (dest >= 0 && dest < kNumBins)
+        {
+            outMag[(size_t)dest]  += mag[(size_t)k];
+            outFreq[(size_t)dest]  = trueFreq[(size_t)k] * pitchRatio;
         }
     }
 
-    writePos++;
+    // ── 5. Accumulate synthesis phase and reconstruct bins ────────────────────
+    // DC and Nyquist
+    fftBuffer[0] = outMag[(size_t)0];
+    fftBuffer[1] = outMag[(size_t)(kNumBins - 1)];
 
-    // Scale: two grains with overlapping Hann windows sum to ~1.0 on average
-    // but we apply a small correction factor to keep unity gain
-    return out * 1.f;
+    for (int k = 1; k < kNumBins - 1; ++k)
+    {
+        synthPhase[(size_t)k] += outFreq[(size_t)k] * expectedPhaseInc;
+        float s = synthPhase[(size_t)k];
+        fftBuffer[(size_t)(k * 2)]     = outMag[(size_t)k] * std::cos (s);
+        fftBuffer[(size_t)(k * 2 + 1)] = outMag[(size_t)k] * std::sin (s);
+    }
+
+    // ── 6. Inverse FFT ────────────────────────────────────────────────────────
+    fft->performRealOnlyInverseTransform (fftBuffer.data());
+
+    // ── 7. Overlap-add with synthesis window and normalisation ────────────────
+    // With sqrt-Hann and 4x overlap, the normalisation factor is kFftSize/2
+    const float norm = 1.f / ((float)kFftSize * 0.5f);
+
+    for (int i = 0; i < kFftSize; ++i)
+    {
+        size_t idx = (size_t)i;
+        if (idx < outAccum.size())
+            outAccum[idx] += fftBuffer[idx] * window[idx] * norm;
+    }
 }
 
 // ── ChoirBoxProcessor ─────────────────────────────────────────────────────────
@@ -157,6 +252,8 @@ void ChoirBoxProcessor::prepareToPlay (double sampleRate, int /*samplesPerBlock*
         downShifterR[(size_t)v].prepare (sampleRate);
     }
 
+    // Report latency: one FFT window so host can compensate
+    setLatencySamples (PitchShifter::kFftSize);
     applyPreset (currentPreset);
 }
 
@@ -217,15 +314,13 @@ void ChoirBoxProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         // ── Distortion ────────────────────────────────────────────────────────
         const float satDrive = 1.f + sat * 4.f;
         const float satComp  = 1.f / (1.f + sat * 0.5f);
-        float satL = std::tanh (inL * satDrive) * satComp;
-        float satR = std::tanh (inR * satDrive) * satComp;
-
+        const float satL     = std::tanh (inL * satDrive) * satComp;
+        const float satR     = std::tanh (inR * satDrive) * satComp;
         const float clipThresh = 1.f - crush * 0.85f;
-        const float clipL = juce::jlimit (-clipThresh, clipThresh, satL);
-        const float clipR = juce::jlimit (-clipThresh, clipThresh, satR);
-
-        const float distL = inL + distMix * (clipL - inL);
-        const float distR = inR + distMix * (clipR - inR);
+        const float clipL    = juce::jlimit (-clipThresh, clipThresh, satL);
+        const float clipR    = juce::jlimit (-clipThresh, clipThresh, satR);
+        const float distL    = inL + distMix * (clipL - inL);
+        const float distR    = inR + distMix * (clipR - inR);
 
         // ── Voices ────────────────────────────────────────────────────────────
         float outL = distL * dryLvl;
@@ -233,14 +328,12 @@ void ChoirBoxProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 
         for (int v = 0; v < numVoices; ++v)
         {
-            // Equal-power pan — up voices spread right, down voices spread left
             const float t = (numVoices > 1)
                             ? (float)v / (float)(numVoices - 1)
                             : 0.5f;
 
-            const float upPan   = 0.5f + t * 0.5f;
-            const float downPan = 0.5f - t * 0.5f;
-
+            const float upPan    = 0.5f + t * 0.5f;
+            const float downPan  = 0.5f - t * 0.5f;
             const float upPanR   = std::sin (upPan   * juce::MathConstants<float>::halfPi);
             const float upPanL   = std::cos (upPan   * juce::MathConstants<float>::halfPi);
             const float downPanL = std::cos (downPan * juce::MathConstants<float>::halfPi);
@@ -296,7 +389,6 @@ const juce::String ChoirBoxProcessor::getProgramName (int index)
     return "Unknown";
 }
 
-// ── State ─────────────────────────────────────────────────────────────────────
 void ChoirBoxProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     auto state = apvts.copyState();
@@ -315,7 +407,6 @@ void ChoirBoxProcessor::setStateInformation (const void* data, int sizeInBytes)
     }
 }
 
-// ── Editor + factory ──────────────────────────────────────────────────────────
 juce::AudioProcessorEditor* ChoirBoxProcessor::createEditor()
 {
     return new ChoirBoxEditor (*this);
