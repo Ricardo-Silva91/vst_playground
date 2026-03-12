@@ -15,6 +15,7 @@ on:
           - through_the_wall
           - drum_smash
           - break_scientist
+          - choir_box
       platforms:
         description: 'Platforms to build'
         required: true
