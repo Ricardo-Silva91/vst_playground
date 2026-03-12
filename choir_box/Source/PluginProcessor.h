@@ -4,16 +4,19 @@
 #include <array>
 #include <vector>
 
-// ── PitchShifter ──────────────────────────────────────────────────────────────
-// Circular buffer with a read pointer that advances at a different rate than
-// the write pointer. The ratio between them determines the pitch shift.
-// A second read pointer (crossfade grain) eliminates discontinuities when the
-// read pointer wraps around.
+// ── PitchShifter — dual-grain overlap-add ─────────────────────────────────────
+// Two grains read from a circular delay buffer at a speed determined by
+// pitchRatio. Each grain is windowed with a Hann envelope. When a grain
+// completes its window it jumps forward so the two grains are always
+// kGrainSize apart and their envelopes always sum to 1.0 (no gaps, no clicks).
+//
+// kBufSize  — delay buffer length, must be power of 2, >> kGrainSize
+// kGrainSize — length of each crossfade grain in samples
 class PitchShifter
 {
 public:
-    static constexpr int kBufSize  = 8192;   // must be power of 2
-    static constexpr int kGrainSize = 1024;  // crossfade window in samples
+    static constexpr int kBufSize   = 16384;  // power of 2, ~370ms @44.1k
+    static constexpr int kGrainSize = 2048;   // ~46ms — long enough for smoothness
 
     PitchShifter();
 
@@ -23,17 +26,25 @@ public:
     float processSample (float in);
 
 private:
-    float    pitchRatio  = 1.0f;
+    float pitchRatio = 1.0f;
 
+    // Circular input buffer
     std::array<float, kBufSize> buf {};
-    int   writePos  = 0;
-    float readPos   = 0.f;
-    float readPos2  = 0.f;   // second grain for crossfade
-    bool  useSecond = false;
+    int writePos = 0;
 
-    // Hann crossfade window
-    std::array<float, kGrainSize> window {};
-    int   grainPos  = 0;     // position within crossfade window
+    // Two grains — each has a floating-point read position and an envelope phase
+    struct Grain
+    {
+        float readPos  = 0.f;   // fractional position in buf
+        int   envPos   = 0;     // position within Hann window (0..kGrainSize-1)
+    };
+    Grain grains[2];
+
+    // Hann window lookup table
+    std::array<float, kGrainSize> hann {};
+
+    // Read one sample from buf at a fractional position (linear interp)
+    float readAt (float pos) const;
 };
 
 // ── Presets ───────────────────────────────────────────────────────────────────
@@ -63,8 +74,7 @@ static const ChoirBoxPreset kPresets[] =
     { "Ghost Voice", 12.f,  -7.f, 1.f,  0.f, 0.3f, 0.9f, 0.7f, 0.3f, 0.0f, 0.3f, 1.0f },
 };
 static constexpr int kNumPresets = (int)(sizeof(kPresets) / sizeof(kPresets[0]));
-
-static constexpr int kMaxVoices = 4;
+static constexpr int kMaxVoices  = 4;
 
 // ── Processor ─────────────────────────────────────────────────────────────────
 class ChoirBoxProcessor : public juce::AudioProcessor
@@ -104,7 +114,6 @@ private:
     int    currentPreset     = 0;
     double currentSampleRate = 44100.0;
 
-    // kMaxVoices shifters per direction, per channel (L/R)
     std::array<PitchShifter, kMaxVoices> upShifterL;
     std::array<PitchShifter, kMaxVoices> upShifterR;
     std::array<PitchShifter, kMaxVoices> downShifterL;

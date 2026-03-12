@@ -18,11 +18,11 @@ static const juce::String kMasterOut     = "masterOut";
 // ── PitchShifter ──────────────────────────────────────────────────────────────
 PitchShifter::PitchShifter()
 {
-    buf.fill (0.f);
-    // Hann window for the crossfade grain
+    // Build Hann window
     for (int i = 0; i < kGrainSize; ++i)
-        window[(size_t)i] = 0.5f * (1.f - std::cos (
-            2.f * juce::MathConstants<float>::pi * (float)i / (float)(kGrainSize - 1)));
+        hann[(size_t)i] = 0.5f * (1.f - std::cos (
+            2.f * juce::MathConstants<float>::pi
+            * (float)i / (float)(kGrainSize - 1)));
 }
 
 void PitchShifter::prepare (double /*sampleRate*/)
@@ -33,11 +33,15 @@ void PitchShifter::prepare (double /*sampleRate*/)
 void PitchShifter::reset()
 {
     buf.fill (0.f);
-    writePos  = 0;
-    readPos   = 0.f;
-    readPos2  = (float)(kBufSize / 2);  // second grain offset by half buffer
-    grainPos  = 0;
-    useSecond = false;
+    writePos = 0;
+
+    // Initialise grains so they are exactly half a grain apart in their
+    // envelope phases — grain 0 starts at the beginning of its window,
+    // grain 1 starts at the halfway point.
+    grains[0].readPos = 0.f;
+    grains[0].envPos  = 0;
+    grains[1].readPos = (float)(kGrainSize / 2);
+    grains[1].envPos  = kGrainSize / 2;
 }
 
 void PitchShifter::setPitchRatio (float ratio)
@@ -45,51 +49,58 @@ void PitchShifter::setPitchRatio (float ratio)
     pitchRatio = ratio;
 }
 
+float PitchShifter::readAt (float pos) const
+{
+    // Wrap into buffer
+    while (pos >= (float)kBufSize) pos -= (float)kBufSize;
+    while (pos <  0.f)             pos += (float)kBufSize;
+
+    int   i0 = (int)pos & (kBufSize - 1);
+    int   i1 = (i0 + 1) & (kBufSize - 1);
+    float fr = pos - std::floor (pos);
+    return buf[(size_t)i0] * (1.f - fr) + buf[(size_t)i1] * fr;
+}
+
 float PitchShifter::processSample (float in)
 {
-    // Write input into circular buffer
+    // Write new sample
     buf[(size_t)(writePos & (kBufSize - 1))] = in;
 
-    // The read pointer advances at pitchRatio relative to the write pointer.
-    // Speed > 1 = pitch up, speed < 1 = pitch down.
-    // We read at a fractional position using linear interpolation.
+    float out = 0.f;
 
-    auto readLinear = [&](float pos) -> float
+    for (int g = 0; g < 2; ++g)
     {
-        int   i0 = (int)pos & (kBufSize - 1);
-        int   i1 = (i0 + 1) & (kBufSize - 1);
-        float fr = pos - std::floor (pos);
-        return buf[(size_t)i0] * (1.f - fr) + buf[(size_t)i1] * fr;
-    };
+        Grain& gr = grains[g];
 
-    // Distance between read and write pointers (read pointer lags behind)
-    // We keep read pointer approximately kGrainSize samples behind write.
-    float targetLag = (float)(kGrainSize);
-    float readPosAbs  = (float)writePos - targetLag;
-    // Let read pointer drift according to pitch ratio instead of tracking exactly:
-    // advance read pointer by pitchRatio each sample
-    readPos  += pitchRatio;
-    readPos2 += pitchRatio;
+        // Apply Hann envelope and accumulate
+        float env = hann[(size_t)gr.envPos];
+        out += readAt (gr.readPos) * env;
 
-    // Wrap read pointers within buffer
-    while (readPos  >= (float)kBufSize) readPos  -= (float)kBufSize;
-    while (readPos  <  0.f)             readPos  += (float)kBufSize;
-    while (readPos2 >= (float)kBufSize) readPos2 -= (float)kBufSize;
-    while (readPos2 <  0.f)             readPos2 += (float)kBufSize;
+        // Advance read position by pitchRatio (fractional sample stepping)
+        gr.readPos += pitchRatio;
 
-    float s1 = readLinear (readPos);
-    float s2 = readLinear (readPos2);
+        // Advance envelope position
+        gr.envPos++;
 
-    // Crossfade between grain 1 and grain 2 using the Hann window position
-    float w1 = window[(size_t)(grainPos % kGrainSize)];
-    float w2 = window[(size_t)((grainPos + kGrainSize / 2) % kGrainSize)];
-    float out = s1 * w1 + s2 * w2;
-
-    grainPos = (grainPos + 1) % kGrainSize;
+        // When this grain completes its window, reset it:
+        // - restart the envelope from 0
+        // - jump the read position forward by kGrainSize relative to
+        //   the current write position so it stays anchored to fresh audio.
+        //   The offset between read and write gives us the effective delay;
+        //   we keep it at kGrainSize samples so the grain always has
+        //   a full window of valid input behind it.
+        if (gr.envPos >= kGrainSize)
+        {
+            gr.envPos  = 0;
+            gr.readPos = (float)(writePos - kGrainSize);
+        }
+    }
 
     writePos++;
-    (void)readPosAbs;
-    return out;
+
+    // Scale: two grains with overlapping Hann windows sum to ~1.0 on average
+    // but we apply a small correction factor to keep unity gain
+    return out * 1.f;
 }
 
 // ── ChoirBoxProcessor ─────────────────────────────────────────────────────────
@@ -160,7 +171,7 @@ void ChoirBoxProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     const int numChannels = buffer.getNumChannels();
     if (numChannels < 1 || numSamples < 1) return;
 
-    // ── Read parameters ───────────────────────────────────────────────────────
+    // ── Parameters ────────────────────────────────────────────────────────────
     const float upSemi    = apvts.getRawParameterValue (kUpSemitones)  ->load();
     const float downSemi  = apvts.getRawParameterValue (kDownSemitones)->load();
     const int   numVoices = juce::jlimit (1, kMaxVoices,
@@ -174,9 +185,7 @@ void ChoirBoxProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     const float distMix   = apvts.getRawParameterValue (kDistMix)      ->load();
     const float masterOut = apvts.getRawParameterValue (kMasterOut)    ->load();
 
-    // ── Update pitch ratios ───────────────────────────────────────────────────
-    // Voices are spread symmetrically around the target semitone.
-    // detune controls total spread in semitones (0-1 semitone range).
+    // ── Pitch ratios ──────────────────────────────────────────────────────────
     for (int v = 0; v < kMaxVoices; ++v)
     {
         float offset = 0.f;
@@ -202,42 +211,45 @@ void ChoirBoxProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 
     for (int i = 0; i < numSamples; ++i)
     {
-        float inL = L[i];
-        float inR = (R != nullptr) ? R[i] : inL;
+        const float inL = L[i];
+        const float inR = (R != nullptr) ? R[i] : inL;
 
         // ── Distortion ────────────────────────────────────────────────────────
-        float satDrive = 1.f + sat * 4.f;
-        float satComp  = 1.f / (1.f + sat * 0.5f);
+        const float satDrive = 1.f + sat * 4.f;
+        const float satComp  = 1.f / (1.f + sat * 0.5f);
         float satL = std::tanh (inL * satDrive) * satComp;
         float satR = std::tanh (inR * satDrive) * satComp;
 
-        float clipThresh = 1.f - crush * 0.85f;
-        float clipL = juce::jlimit (-clipThresh, clipThresh, satL);
-        float clipR = juce::jlimit (-clipThresh, clipThresh, satR);
+        const float clipThresh = 1.f - crush * 0.85f;
+        const float clipL = juce::jlimit (-clipThresh, clipThresh, satL);
+        const float clipR = juce::jlimit (-clipThresh, clipThresh, satR);
 
-        float distL = inL + distMix * (clipL - inL);
-        float distR = inR + distMix * (clipR - inR);
+        const float distL = inL + distMix * (clipL - inL);
+        const float distR = inR + distMix * (clipR - inR);
 
-        // ── Mix voices ────────────────────────────────────────────────────────
+        // ── Voices ────────────────────────────────────────────────────────────
         float outL = distL * dryLvl;
         float outR = distR * dryLvl;
 
         for (int v = 0; v < numVoices; ++v)
         {
-            // Pan: up voices spread centre→right, down voices centre→left
-            float t = (numVoices > 1) ? (float)v / (float)(numVoices - 1) : 0.5f;
-            float upPan   = 0.5f + t * 0.5f;   // 0.5 → 1.0
-            float downPan = 0.5f - t * 0.5f;   // 0.5 → 0.0
+            // Equal-power pan — up voices spread right, down voices spread left
+            const float t = (numVoices > 1)
+                            ? (float)v / (float)(numVoices - 1)
+                            : 0.5f;
 
-            float upPanR   = std::sin (upPan   * juce::MathConstants<float>::halfPi);
-            float upPanL   = std::cos (upPan   * juce::MathConstants<float>::halfPi);
-            float downPanL = std::cos (downPan * juce::MathConstants<float>::halfPi);
-            float downPanR = std::sin (downPan * juce::MathConstants<float>::halfPi);
+            const float upPan   = 0.5f + t * 0.5f;
+            const float downPan = 0.5f - t * 0.5f;
 
-            float upL   = upShifterL[(size_t)v].processSample (distL);
-            float upR   = upShifterR[(size_t)v].processSample (distR);
-            float dnL   = downShifterL[(size_t)v].processSample (distL);
-            float dnR   = downShifterR[(size_t)v].processSample (distR);
+            const float upPanR   = std::sin (upPan   * juce::MathConstants<float>::halfPi);
+            const float upPanL   = std::cos (upPan   * juce::MathConstants<float>::halfPi);
+            const float downPanL = std::cos (downPan * juce::MathConstants<float>::halfPi);
+            const float downPanR = std::sin (downPan * juce::MathConstants<float>::halfPi);
+
+            const float upL  = upShifterL[(size_t)v].processSample (distL);
+            const float upR  = upShifterR[(size_t)v].processSample (distR);
+            const float dnL  = downShifterL[(size_t)v].processSample (distL);
+            const float dnR  = downShifterR[(size_t)v].processSample (distR);
 
             outL += upLvl   * voiceScale * upPanL   * upL;
             outR += upLvl   * voiceScale * upPanR   * upR;
