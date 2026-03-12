@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(PitchWobble VERSION 1.0.0)
+project(pitch_wobble VERSION 1.0.0)
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -14,7 +14,7 @@ juce_add_binary_data(PitchWobbleFonts
         ${CMAKE_CURRENT_SOURCE_DIR}/logo_transparent.svg
 )
 
-juce_add_plugin(PitchWobble
+juce_add_plugin(pitch_wobble
     COMPANY_NAME         "YourName"
     IS_SYNTH             FALSE
     NEEDS_MIDI_INPUT     FALSE
@@ -25,10 +25,10 @@ juce_add_plugin(PitchWobble
     PLUGIN_MANUFACTURER_CODE Mypg
     PLUGIN_CODE Pwob
     FORMATS              VST3
-    PRODUCT_NAME         "PitchWobble"
+    PRODUCT_NAME         "pitch_wobble"
 )
 
-target_sources(PitchWobble
+target_sources(pitch_wobble
     PRIVATE
         Source/PluginProcessor.cpp
         Source/PluginProcessor.h
@@ -36,7 +36,7 @@ target_sources(PitchWobble
         Source/PluginEditor.h
 )
 
-target_link_libraries(PitchWobble
+target_link_libraries(pitch_wobble
     PRIVATE
         PitchWobbleFonts
         juce::juce_audio_utils
@@ -47,7 +47,7 @@ target_link_libraries(PitchWobble
         juce::juce_recommended_warning_flags
 )
 
-target_compile_definitions(PitchWobble
+target_compile_definitions(pitch_wobble
     PUBLIC
         JUCE_WEB_BROWSER=0
         JUCE_USE_CURL=0
