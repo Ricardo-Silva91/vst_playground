@@ -169,6 +169,34 @@ footer {
 .spec-val { font-family: var(--mono); font-size: 1.1rem; color: var(--led-amber); }
 .spec-label { font-family: var(--mono); font-size: 8px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-dim); }
 
+/* ── INSTALLER STRIP ── */
+.installer-strip {
+  background: var(--panel-lt); border: 1px solid rgba(232,130,10,0.2);
+  border-top: 2px solid rgba(232,130,10,0.35); border-bottom: 2px solid #0a0a0a;
+  padding: 1rem 2rem; margin-bottom: 1.2rem;
+  display: flex; align-items: center; gap: 2rem; flex-wrap: wrap;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(232,130,10,0.06);
+}
+.installer-strip-left { display: flex; flex-direction: column; gap: 0.3rem; flex: 1; min-width: 200px; }
+.installer-strip-label {
+  font-family: var(--mono); font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase;
+  color: var(--led-amber);
+}
+.installer-strip-desc { font-size: 0.9rem; color: var(--text-dim); line-height: 1.5; }
+.installer-strip-cmds { display: flex; gap: 1.2rem; flex-shrink: 0; flex-wrap: wrap; }
+.installer-cmd {
+  display: flex; flex-direction: column; gap: 0.25rem;
+}
+.installer-cmd-os {
+  font-family: var(--mono); font-size: 8px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--text-dim);
+}
+.installer-cmd code {
+  font-family: var(--mono); font-size: 10px; color: var(--silk);
+  background: var(--panel); border: 1px solid #333;
+  padding: 0.3rem 0.7rem; letter-spacing: 0.05em;
+}
+
 .modules { display: flex; flex-direction: column; gap: 1.2rem; margin-bottom: 2rem; }
 .module {
   background: var(--panel); border: 1px solid #2e2e2e; border-top: 2px solid #3a3a3a; border-bottom: 2px solid #0d0d0d;
@@ -383,6 +411,10 @@ footer        { animation: fadeSlide 0.5s 0.4s ease both; }
 @media (max-width: 640px) {
   body::before, body::after { width: 14px; }
   .page { padding: 0 22px; }
+
+  /* installer strip */
+  .installer-strip { flex-direction: column; gap: 1rem; padding: 1rem 1.2rem; }
+  .installer-strip-cmds { flex-direction: column; gap: 0.7rem; }
 
   /* index */
   .nameplate { padding: 1.2rem; flex-wrap: wrap; gap: 0.8rem; }
