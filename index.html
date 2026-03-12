@@ -6,8 +6,8 @@
   <title>Lizard VST — Audio Effects</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link rel="stylesheet" href="shared.css">
-  <link rel="icon" type="image/x-icon" href="assets/favicon-32.png">
   <style>
     header { margin: 2rem 0 1.5rem; }
   </style>
@@ -43,7 +43,7 @@
       <strong>All stereo. All VST3. No registration.</strong>
     </p>
     <div class="spec-row">
-      <div class="spec"><span class="spec-val">05</span><span class="spec-label">Plugins</span></div>
+      <div class="spec"><span class="spec-val">06</span><span class="spec-label">Plugins</span></div>
       <div class="spec"><span class="spec-val">VST3</span><span class="spec-label">Format</span></div>
       <div class="spec"><span class="spec-val">2CH</span><span class="spec-label">Stereo</span></div>
     </div>
@@ -340,6 +340,67 @@
         <div class="vu-seg on-green"></div>
         <div class="vu-seg on-green"></div>
         <div class="vu-seg on-green"></div>
+      </div>
+    </div>
+
+
+    <!-- CHOIR BOX -->
+    <div class="module">
+      <div class="screw tl"></div><div class="screw tr"></div>
+      <div class="screw bl"></div><div class="screw br"></div>
+      <div class="module-inner">
+        <div class="module-face" data-num="06">
+          <div class="knob-wrap">
+            <div class="knob" style="background:radial-gradient(circle at 35% 30%,#1e3a38 0%,#0f211f 45%,#050f0e 100%);"></div>
+            <span class="knob-label">Detune</span>
+          </div>
+          <div class="module-name-wrap">
+            <div class="module-name">Choir<br>Box</div>
+          </div>
+          <div class="cat-badge">
+            <div class="cat-dot" style="background:#4ecdc4;box-shadow:0 0 4px rgba(78,205,196,0.8);"></div>
+            Vocal Harmonizer
+          </div>
+        </div>
+        <div class="module-content">
+          <p class="module-desc">
+            Layers pitch-shifted voices above and below your signal and spreads them across the stereo field. <strong>Up to eight shifted voices total</strong>, with independent levels and an optional saturation and hard-clip chain — from tight studio doubles to wrecked lo-fi choir stacks.
+          </p>
+          <div class="module-bottom">
+            <div class="params-group">
+              <p class="params-label">Parameters</p>
+              <div class="params">
+                <span class="param">Up Semitones</span>
+                <span class="param">Down Semitones</span>
+                <span class="param">Voices</span>
+                <span class="param">Detune</span>
+                <span class="param">Sat</span>
+                <span class="param">Crush</span>
+                <span class="param">Dist Mix</span>
+                <span class="param">Output</span>
+              </div>
+            </div>
+            <div class="dl-row">
+              <a class="dl-btn mac" href="https://github.com/Ricardo-Silva91/vst_playground/releases/download/choir_box-latest/Choir_Box.vst3_Mac.zip">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 1 0 20A10 10 0 0 1 12 2z"/><path d="M12 8v8M8 14l4 4 4-4"/></svg>macOS
+              </a>
+              <a class="dl-btn win" href="https://github.com/Ricardo-Silva91/vst_playground/releases/download/choir_box-latest/Choir_Box.vst3_Windows.zip">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8"/><rect x="13" y="3" width="8" height="8"/><rect x="3" y="13" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/></svg>Windows
+              </a>
+              <a class="dl-btn" href="choir_box.html" style="color:var(--silk);margin-left:0.3rem;">Details &#8250;</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="vu-wrap">
+        <div class="vu-seg"></div>
+        <div class="vu-seg" style="background:#4ecdc4;box-shadow:0 0 3px rgba(78,205,196,0.6);border-color:#3aafa8;"></div>
+        <div class="vu-seg" style="background:#4ecdc4;box-shadow:0 0 3px rgba(78,205,196,0.6);border-color:#3aafa8;"></div>
+        <div class="vu-seg" style="background:#4ecdc4;box-shadow:0 0 3px rgba(78,205,196,0.6);border-color:#3aafa8;"></div>
+        <div class="vu-seg" style="background:#4ecdc4;box-shadow:0 0 3px rgba(78,205,196,0.6);border-color:#3aafa8;"></div>
+        <div class="vu-seg" style="background:#4ecdc4;box-shadow:0 0 3px rgba(78,205,196,0.6);border-color:#3aafa8;"></div>
+        <div class="vu-seg on-amber"></div>
+        <div class="vu-seg"></div>
       </div>
     </div>
 

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Choir Box — Lizard VST</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    :root { --accent: #4ecdc4; --accent-rgb: 78,205,196; }
+    .hero-face .knob { background: radial-gradient(circle at 35% 30%, #1e3a38 0%, #0f211f 45%, #050f0e 100%); }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <nav class="nav">
+    <a href="index.html">&#8592; All Plugins</a>
+    <span class="sep">/</span>
+    <span>Choir Box</span>
+  </nav>
+
+  <div class="hero">
+    <div class="screw tl"></div><div class="screw tr"></div>
+    <div class="screw bl"></div><div class="screw br"></div>
+    <div class="hero-inner">
+      <div class="hero-face">
+        <span class="hero-num">MODULE 06 / 06</span>
+        <div class="hero-title">Choir<br>Box</div>
+        <div class="knob-row" style="gap:0.6rem;">
+          <div class="knob-unit"><div class="knob" style="transform:rotate(30deg);width:38px;height:38px;"></div><span class="knob-label">Up St</span></div>
+          <div class="knob-unit"><div class="knob" style="transform:rotate(-25deg);width:38px;height:38px;"></div><span class="knob-label">Dn St</span></div>
+          <div class="knob-unit"><div class="knob" style="transform:rotate(20deg);width:38px;height:38px;"></div><span class="knob-label">Voice</span></div>
+          <div class="knob-unit"><div class="knob" style="transform:rotate(45deg);width:38px;height:38px;"></div><span class="knob-label">Detune</span></div>
+          <div class="knob-unit"><div class="knob" style="transform:rotate(55deg);width:38px;height:38px;"></div><span class="knob-label">Sat</span></div>
+        </div>
+        <div class="hero-cat">
+          <div class="cat-dot" style="background:#4ecdc4;box-shadow:0 0 5px rgba(78,205,196,0.9);"></div>
+          Vocal Harmonizer
+        </div>
+        <img src="assets/logo.png" alt="Lizard VST" class="hero-logo">
+      </div>
+      <div class="hero-body">
+        <div class="hero-tagline">From tight doubles to wrecked lo-fi choir stacks.</div>
+        <p class="hero-desc">
+          Choir Box layers pitch-shifted voices above and below your signal, spreads them across the stereo field, and optionally runs them through a saturation and hard-clip chain before mixing. <strong>Up to eight shifted voices total, independently levelled and panned.</strong> Works on vocals, synth pads, bass, keys — anything that needs harmonic depth.
+        </p>
+        <div class="hero-dl">
+          <a class="dl-btn mac" href="https://github.com/Ricardo-Silva91/vst_playground/releases/download/choir_box-latest/Choir_Box.vst3_Mac.zip">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 1 0 20A10 10 0 0 1 12 2z"/><path d="M12 8v8M8 14l4 4 4-4"/></svg>macOS
+          </a>
+          <a class="dl-btn win" href="https://github.com/Ricardo-Silva91/vst_playground/releases/download/choir_box-latest/Choir_Box.vst3_Windows.zip">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8"/><rect x="13" y="3" width="8" height="8"/><rect x="3" y="13" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/></svg>Windows
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIGNAL CHAIN -->
+  <div class="content-grid wide">
+    <div class="panel">
+      <div class="panel-title">Signal Chain</div>
+      <div class="chain">
+        <span class="chain-node">Input</span><span class="chain-arrow">&#8250;</span>
+        <span class="chain-node highlight">Sat &rarr; Hard Clip</span><span class="chain-arrow">&#8250;</span>
+        <span class="chain-node highlight">Dist Mix</span><span class="chain-arrow">&#8250;</span>
+        <span class="chain-node highlight">Phase Vocoder</span><span class="chain-arrow">&#8250;</span>
+        <span class="chain-node highlight">Up Voices &#215;1–4</span><span class="chain-arrow">&#8250;</span>
+        <span class="chain-node highlight">Down Voices &#215;1–4</span><span class="chain-arrow">&#8250;</span>
+        <span class="chain-node highlight">Stereo Spread</span><span class="chain-arrow">&#8250;</span>
+        <span class="chain-node highlight">Output Gain</span><span class="chain-arrow">&#8250;</span>
+        <span class="chain-node">Output</span>
+      </div>
+      <p class="chain-note">
+        The distortion section (Sat into hard clip) runs on the input before any pitch shifting. Dist Mix then blends between clean and distorted signal, and that blend feeds the phase vocoder. This means harmonic content introduced by saturation gets shifted along with the fundamental — the grit moves with the notes. The phase vocoder introduces ~46ms of processing latency, reported to the host automatically.
+      </p>
+    </div>
+  </div>
+
+  <!-- PARAMETERS -->
+  <div class="content-grid">
+    <div class="panel">
+      <div class="panel-title">Pitch &amp; Voices</div>
+      <div class="param-list">
+        <div class="param-card">
+          <div class="param-name">Up Semitones</div>
+          <p class="param-desc">Semitones above the input for the upper voices. <strong>Default +7 (a perfect fifth)</strong> works on almost anything. Negative values flip the upper voices below the input for dense low clusters.</p>
+          <div class="param-range">Range: &minus;24 &rarr; +24 st &nbsp;&nbsp; Default: +7</div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">Down Semitones</div>
+          <p class="param-desc">Semitones below the input for the lower voices. <strong>Default &minus;7</strong> mirrors the fifth downward. Set to 0 to silence the lower layer and use only the upward voices.</p>
+          <div class="param-range">Range: &minus;24 &rarr; +24 st &nbsp;&nbsp; Default: &minus;7</div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">Voices</div>
+          <p class="param-desc">Voice layers generated per direction. At 1 you get one up and one down voice. At 4 you get four of each — <strong>eight shifted voices total</strong>. Higher counts spread detune and panning more aggressively across the stereo field.</p>
+          <div class="param-range">Range: 1 &rarr; 4 &nbsp;&nbsp; Default: 1</div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">Detune</div>
+          <p class="param-desc">Random pitch offset between voices in each direction, in cents. At 0 voices are in perfect unison. Higher values create <strong>the natural looseness of a real choir</strong> — each voice sits at a slightly different pitch, just as no two singers ever lock perfectly.</p>
+          <div class="param-range">Range: 0 &rarr; 100 cents &nbsp;&nbsp; Default: 20</div>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Levels &amp; Distortion</div>
+      <div class="param-list">
+        <div class="param-card">
+          <div class="param-name">Dry / Up Lvl / Down Lvl</div>
+          <p class="param-desc">Independent levels for the dry signal and each voice direction. <strong>Pull Dry back to 0.3</strong> with voice levels up for a hollow, pitch-shifted texture where the source almost disappears behind its harmonics.</p>
+          <div class="param-range">Dry default: 1.0 &nbsp;&nbsp; Up / Down Lvl default: 0.7</div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">Sat</div>
+          <p class="param-desc">Tanh saturation before the voices are generated. Low values add warmth; high values clip aggressively. <strong>Even a small amount adds air</strong> to the shifted voices without obvious distortion on the output.</p>
+          <div class="param-range">Range: 0 &rarr; 1 &nbsp;&nbsp; Default: 0</div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">Crush</div>
+          <p class="param-desc">Hard clip threshold on top of Sat, flattening transients and adding a harder edge. <strong>Works best when Sat is already engaged</strong> — Crush shapes the ceiling of the already-saturated signal rather than clipping a clean source.</p>
+          <div class="param-range">Range: 0 &rarr; 1 &nbsp;&nbsp; Default: 0</div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">Dist Mix</div>
+          <p class="param-desc">Blends clean input with the distorted signal before pitch shifting. At 0 the voices are entirely clean; at 1 fully processed. <strong>10–20% adds warmth without sounding distorted</strong> — the saturation becomes part of the timbre of the voices rather than an audible effect.</p>
+          <div class="param-range">Range: 0 (clean) &rarr; 1 (full distortion) &nbsp;&nbsp; Default: 0</div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">Output</div>
+          <p class="param-desc">Master output gain. <strong>Four voices per direction at full level will clip</strong> — use this to compensate when stacking many voices at high levels.</p>
+          <div class="param-range">Range: 0 &rarr; 2 &nbsp;&nbsp; Default: 1.0</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRESETS -->
+  <div class="content-grid wide">
+    <div class="panel">
+      <div class="panel-title">Presets</div>
+      <div class="preset-grid">
+        <div class="preset-card">
+          <div class="preset-name">Power Fifth</div>
+          <p class="preset-desc">One voice up a fifth, one down. No detune, no distortion. Clean fifth harmonics that reinforce anything — pads, bass, vocals. The default starting point.</p>
+        </div>
+        <div class="preset-card">
+          <div class="preset-name">Tight Stack</div>
+          <p class="preset-desc">Minor third up and down, two voices, light detune and a touch of saturation. Dense, slightly impure unison — ideal for thickening a lead without it sounding like an obvious effect.</p>
+        </div>
+        <div class="preset-card">
+          <div class="preset-name">Choir</div>
+          <p class="preset-desc">Four voices, seventh up, fifth down, moderate detune and barely-there saturation. Voices fan out across the full stereo field, approximating the natural spread of a small vocal group.</p>
+        </div>
+        <div class="preset-card">
+          <div class="preset-name">Lo-Fi Choir</div>
+          <p class="preset-desc">Three voices, heavier saturation and crush, blended halfway with the distortion mix. Like a choir recorded on cheap tape — works on sampler pads, lo-fi keys, and drum room channels.</p>
+        </div>
+        <div class="preset-card">
+          <div class="preset-name">Blown Out</div>
+          <p class="preset-desc">Two voices, a seventh up and an octave down, heavy saturation, nearly full crush. Intentionally rough. Best as a send effect or layered quietly under a clean source for texture.</p>
+        </div>
+        <div class="preset-card">
+          <div class="preset-name">Ghost Voice</div>
+          <p class="preset-desc">One voice up an octave, one a fifth down, dry pulled to 30%, no distortion. The source almost disappears behind its harmonics — hollow and distant. Good for pads and transitions.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- USE CASES -->
+  <div class="content-grid wide">
+    <div class="panel">
+      <div class="panel-title">Use Cases</div>
+      <div class="usecase-list">
+        <div class="usecase-card">
+          <div class="usecase-title">Vocal harmonies and doubles</div>
+          <p class="usecase-body">Set Up and Down Semitones to thirds or fifths, keep Voices at 1–2 and Detune low. The result sounds like a real double-tracked vocal or a tight harmony part — <strong>without recording a second take</strong>. Use as a send to control the blend from the mixer.</p>
+          <div class="usecase-settings">Up St: +4 or +7 / Down St: &minus;3 or &minus;7 / Voices: 1 / Detune: 5–15</div>
+        </div>
+        <div class="usecase-card">
+          <div class="usecase-title">Synth pad thickening</div>
+          <p class="usecase-body">On a sustained pad, push Voices to 3–4 with moderate Detune and the Choir preset. Each voice gets panned to a different position, turning a single oscillator into <strong>a wide, drifting harmonic spread</strong> that fills the stereo field.</p>
+          <div class="usecase-settings">Voices: 3–4 / Detune: 25–40 / Dist Mix: 0.1 for warmth</div>
+        </div>
+        <div class="usecase-card">
+          <div class="usecase-title">Lo-fi texture layer</div>
+          <p class="usecase-body">Run a drum room channel, a Rhodes, or a bass through Choir Box with the Lo-Fi Choir preset. The saturated, crushed harmonics <strong>add grit and vintage character</strong> without touching the original source — blend it quietly under the dry signal at 20–30%.</p>
+          <div class="usecase-settings">Preset: Lo-Fi Choir / blend in at low send level / keep Dry low on the return</div>
+        </div>
+        <div class="usecase-card">
+          <div class="usecase-title">Slow harmonic movement on pads</div>
+          <p class="usecase-body">Automate Up/Down Semitones in real time during a sustained chord. The phase vocoder responds smoothly, <strong>slowly detuning the intervals</strong> as the chord holds — from a fifth, drifting to a fourth, then a tritone. Unsettling and effective on slow-moving material.</p>
+          <div class="usecase-settings">Automate Up St and Down St slowly / Voices: 2 / Detune: 10–20</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TIPS -->
+  <div class="content-grid wide">
+    <div class="panel">
+      <div class="panel-title">Tips and Workflow</div>
+      <div class="tip-list">
+        <div class="tip">
+          <span class="tip-icon">&#9654;</span>
+          <p class="tip-text"><strong>Use as a send, not an insert.</strong> Running Choir Box on a dedicated send channel lets you control the wet blend from the mixer without touching the dry signal. This keeps the dry signal phase-perfect and lets you automate choir depth independently.</p>
+        </div>
+        <div class="tip">
+          <span class="tip-icon">&#9654;</span>
+          <p class="tip-text"><strong>Voices = 1 is the cleanest.</strong> For subtle reinforcement, stay at 1–2 voices and keep Detune low. For an obvious choir effect, push to 3–4 voices with Detune above 30. The difference between 1 and 4 voices is dramatic.</p>
+        </div>
+        <div class="tip">
+          <span class="tip-icon">&#9654;</span>
+          <p class="tip-text"><strong>Stack two instances for complex chords.</strong> One instance tuned to a third, another to a fifth, both at low voice counts and moderate levels. Mixing them in the DAW gives you control over each interval independently — more flexible than trying to get both from one instance.</p>
+        </div>
+        <div class="tip">
+          <span class="tip-icon">&#9654;</span>
+          <p class="tip-text"><strong>Automate Up/Down Semitones for movement.</strong> The pitch shifter responds to parameter changes in real time. Slowly moving the interval values during a sustained chord creates a slow detuning effect — particularly effective on pads and strings where the movement has time to develop.</p>
+        </div>
+        <div class="tip">
+          <span class="tip-icon">&#9654;</span>
+          <p class="tip-text"><strong>Dist Mix at 10–20% adds texture without obvious grit.</strong> The saturation runs on the input before pitch shifting, so the harmonic content gets shifted along with the fundamental. The distortion becomes part of the timbre of the voices, not an audible effect sitting on top.</p>
+        </div>
+        <div class="tip">
+          <span class="tip-icon">&#9654;</span>
+          <p class="tip-text"><strong>Watch output gain when stacking voices.</strong> Four voices up and four down at default levels will significantly increase the output level. Bring Output down before adding more voices — it's easier to recover level than to clean up clipping on the master.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="screw tl"></div><div class="screw tr"></div>
+    <span class="footer-text">Lizard VST &nbsp;&#183;&nbsp; Free VST3 &nbsp;&#183;&nbsp; macOS &amp; Windows</span>
+    <a class="footer-link" href="https://github.com/Ricardo-Silva91/vst_playground" target="_blank">&#8599; See on GitHub</a>
+  </footer>
+
+</div>
+</body>
+</html>
