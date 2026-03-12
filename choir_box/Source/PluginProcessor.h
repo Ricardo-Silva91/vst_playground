@@ -100,7 +100,6 @@ public:
     bool acceptsMidi()  const override { return false; }
     bool producesMidi() const override { return false; }
     double getTailLengthSeconds() const override { return 0.05; }
-    int    getLatencySamples()    const override { return PitchShifter::kFftSize; }
 
     int  getNumPrograms()    override { return kNumPresets; }
     int  getCurrentProgram() override { return currentPreset; }

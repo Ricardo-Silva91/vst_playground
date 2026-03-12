@@ -29,7 +29,7 @@ PitchShifter::PitchShifter()
 
     // Hann window
     for (int i = 0; i < kFftSize; ++i)
-        window[i] = 0.5f * (1.f - std::cos (2.f * juce::MathConstants<float>::pi * i / (kFftSize - 1)));
+        window[(size_t)i] = 0.5f * (1.f - std::cos (2.f * juce::MathConstants<float>::pi * (float)i / (float)(kFftSize - 1)));
 
     outputLatency = kFftSize;
 }
@@ -62,7 +62,7 @@ float PitchShifter::processSample (float in)
 {
     const int bufMask = (int)inBuf.size() - 1;
 
-    inBuf[inWritePos & bufMask] = in;
+    inBuf[(size_t)(inWritePos & bufMask)] = in;
     inWritePos++;
     inputFill++;
 
@@ -73,8 +73,8 @@ float PitchShifter::processSample (float in)
         processFrame();
     }
 
-    float out = outBuf[outReadPos & bufMask];
-    outBuf[outReadPos & bufMask] = 0.f;
+    float out = outBuf[(size_t)(outReadPos & bufMask)];
+    outBuf[(size_t)(outReadPos & bufMask)] = 0.f;
     outReadPos++;
     return out;
 }
@@ -89,8 +89,8 @@ void PitchShifter::processFrame()
     int readStart = inWritePos - kFftSize;
     for (int i = 0; i < kFftSize; ++i)
     {
-        timeDomain[i] = inBuf[(readStart + i) & bufMask] * window[i];
-        timeDomain[i + kFftSize] = 0.f;  // zero-pad for FFT
+        timeDomain[(size_t)i]            = inBuf[(size_t)((readStart + i) & bufMask)] * window[(size_t)i];
+        timeDomain[(size_t)(i + kFftSize)] = 0.f;  // zero-pad for FFT
     }
 
     // ── 2. Forward FFT ────────────────────────────────────────────────────────
@@ -98,7 +98,7 @@ void PitchShifter::processFrame()
 
     // Pack into complex bins
     for (int b = 0; b < numBins; ++b)
-        freqDomain[b] = { timeDomain[b * 2], timeDomain[b * 2 + 1] };
+        freqDomain[(size_t)b] = { timeDomain[(size_t)(b * 2)], timeDomain[(size_t)(b * 2 + 1)] };
 
     // ── 3. Phase vocoder — analyse phase, synthesise at new pitch ─────────────
     const float expectedPhaseDiff = 2.f * juce::MathConstants<float>::pi
@@ -109,19 +109,19 @@ void PitchShifter::processFrame()
 
     for (int b = 0; b < numBins; ++b)
     {
-        float re = freqDomain[b].real();
-        float im = freqDomain[b].imag();
-        mag[b]   = std::sqrt (re*re + im*im);
+        float re = freqDomain[(size_t)b].real();
+        float im = freqDomain[(size_t)b].imag();
+        mag[(size_t)b]   = std::sqrt (re*re + im*im);
         float p  = std::atan2 (im, re);
 
         // True frequency deviation from expected
-        float delta = p - lastPhase[b] - (float)b * expectedPhaseDiff;
+        float delta = p - lastPhase[(size_t)b] - (float)b * expectedPhaseDiff;
         // Wrap to -pi..pi
         delta -= 2.f * juce::MathConstants<float>::pi
                  * std::round (delta / (2.f * juce::MathConstants<float>::pi));
 
-        lastPhase[b] = p;
-        phase[b] = delta / expectedPhaseDiff + (float)b;  // true bin frequency
+        lastPhase[(size_t)b] = p;
+        phase[(size_t)b] = delta / expectedPhaseDiff + (float)b;  // true bin frequency
     }
 
     // Resample magnitude/phase to shifted bin positions
@@ -133,23 +133,23 @@ void PitchShifter::processFrame()
         int shifted = (int)std::round ((float)b * pitchRatio);
         if (shifted >= 0 && shifted < numBins)
         {
-            outMag[shifted]   += mag[b];
-            outPhase[shifted]  = phase[b] * pitchRatio;
+            outMag[(size_t)shifted]   += mag[(size_t)b];
+            outPhase[(size_t)shifted]  = phase[(size_t)b] * pitchRatio;
         }
     }
 
     // Accumulate synthesis phase
     for (int b = 0; b < numBins; ++b)
     {
-        synthPhase[b] += outPhase[b] * expectedPhaseDiff;
-        freqDomain[b]  = std::polar (outMag[b], synthPhase[b]);
+        synthPhase[(size_t)b] += outPhase[(size_t)b] * expectedPhaseDiff;
+        freqDomain[(size_t)b]  = std::polar (outMag[(size_t)b], synthPhase[(size_t)b]);
     }
 
     // ── 4. Inverse FFT ────────────────────────────────────────────────────────
     for (int b = 0; b < numBins; ++b)
     {
-        timeDomain[b * 2]     = freqDomain[b].real();
-        timeDomain[b * 2 + 1] = freqDomain[b].imag();
+        timeDomain[(size_t)(b * 2)]     = freqDomain[(size_t)b].real();
+        timeDomain[(size_t)(b * 2 + 1)] = freqDomain[(size_t)b].imag();
     }
     fft->performRealOnlyInverseTransform (timeDomain.data());
 
@@ -157,7 +157,7 @@ void PitchShifter::processFrame()
     const float scale = 1.f / (float)(kOverlap * kHopSize) * 2.f;
     for (int i = 0; i < kFftSize; ++i)
     {
-        outBuf[(outWritePos + i) & outMask] += timeDomain[i] * window[i] * scale;
+        outBuf[(size_t)((outWritePos + i) & outMask)] += timeDomain[(size_t)i] * window[(size_t)i] * scale;
     }
     outWritePos += kHopSize;
 }
@@ -210,10 +210,10 @@ void ChoirBoxProcessor::prepareToPlay (double sampleRate, int /*samplesPerBlock*
 
     for (int v = 0; v < kMaxVoices; ++v)
     {
-        upShifterL[v].prepare (sampleRate);
-        upShifterR[v].prepare (sampleRate);
-        downShifterL[v].prepare (sampleRate);
-        downShifterR[v].prepare (sampleRate);
+        upShifterL[(size_t)v].prepare (sampleRate);
+        upShifterR[(size_t)v].prepare (sampleRate);
+        downShifterL[(size_t)v].prepare (sampleRate);
+        downShifterR[(size_t)v].prepare (sampleRate);
     }
 
     setLatencySamples (PitchShifter::kFftSize);
@@ -259,10 +259,10 @@ void ChoirBoxProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         float upRatio   = std::pow (2.f, (upSemi   + offset) / 12.f);
         float downRatio = std::pow (2.f, (downSemi + offset) / 12.f);
 
-        upShifterL[v].setPitchRatio (upRatio);
-        upShifterR[v].setPitchRatio (upRatio);
-        downShifterL[v].setPitchRatio (downRatio);
-        downShifterR[v].setPitchRatio (downRatio);
+        upShifterL[(size_t)v].setPitchRatio (upRatio);
+        upShifterR[(size_t)v].setPitchRatio (upRatio);
+        downShifterL[(size_t)v].setPitchRatio (downRatio);
+        downShifterR[(size_t)v].setPitchRatio (downRatio);
     }
 
     float* L = buffer.getWritePointer (0);
@@ -308,10 +308,10 @@ void ChoirBoxProcessor::processBlock (juce::AudioBuffer<float>& buffer,
                 downPan = 0.5f - t * 0.5f;   // 0.5 → 0.0
             }
 
-            float upL_shifted   = upShifterL[v].processSample (distL);
-            float upR_shifted   = upShifterR[v].processSample (distR);
-            float downL_shifted = downShifterL[v].processSample (distL);
-            float downR_shifted = downShifterR[v].processSample (distR);
+            float upL_shifted   = upShifterL[(size_t)v].processSample (distL);
+            float upR_shifted   = upShifterR[(size_t)v].processSample (distR);
+            float downL_shifted = downShifterL[(size_t)v].processSample (distL);
+            float downR_shifted = downShifterR[(size_t)v].processSample (distR);
 
             // Equal-power pan law
             float upPanR   = std::sin (upPan   * juce::MathConstants<float>::halfPi);
@@ -389,7 +389,7 @@ void ChoirBoxProcessor::setStateInformation (const void* data, int sizeInBytes)
 // ── Editor + factory ──────────────────────────────────────────────────────────
 juce::AudioProcessorEditor* ChoirBoxProcessor::createEditor()
 {
-    return new juce::GenericAudioProcessorEditor (*this);
+    return new ChoirBoxEditor (*this);
 }
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
