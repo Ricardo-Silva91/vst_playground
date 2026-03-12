@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(ReverseReverb VERSION 1.0.0)
+project(reverse_reverb VERSION 1.0.0)
 
 # JUCE lives at repo root, one level up from this plugin folder
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../JUCE JUCE_build)
@@ -13,7 +13,7 @@ juce_add_binary_data(ReverseReverbFonts
         ${CMAKE_CURRENT_SOURCE_DIR}/logo_transparent.svg
 )
 
-juce_add_plugin(ReverseReverb
+juce_add_plugin(reverse_reverb
     COMPANY_NAME         "YourName"
     IS_SYNTH             FALSE
     NEEDS_MIDI_INPUT     FALSE
@@ -24,10 +24,10 @@ juce_add_plugin(ReverseReverb
     PLUGIN_MANUFACTURER_CODE Manu
     PLUGIN_CODE Rev1
     FORMATS              VST3
-    PRODUCT_NAME         "ReverseReverb"
+    PRODUCT_NAME         "reverse_reverb"
 )
 
-target_sources(ReverseReverb
+target_sources(reverse_reverb
     PRIVATE
         Source/PluginProcessor.cpp
         Source/PluginProcessor.h
@@ -35,7 +35,7 @@ target_sources(ReverseReverb
         Source/PluginEditor.h
 )
 
-target_link_libraries(ReverseReverb
+target_link_libraries(reverse_reverb
     PRIVATE
         ReverseReverbFonts
         juce::juce_audio_utils
@@ -46,7 +46,7 @@ target_link_libraries(ReverseReverb
         juce::juce_recommended_warning_flags
 )
 
-target_compile_definitions(ReverseReverb
+target_compile_definitions(reverse_reverb
     PUBLIC
         JUCE_WEB_BROWSER=0
         JUCE_USE_CURL=0
