@@ -3,69 +3,54 @@
 #include <juce_dsp/juce_dsp.h>
 #include <array>
 #include <vector>
-#include <complex>
 
-// ── Pitch shifter — overlap-add phase vocoder, mono ───────────────────────────
+// ── PitchShifter ──────────────────────────────────────────────────────────────
+// Circular buffer with a read pointer that advances at a different rate than
+// the write pointer. The ratio between them determines the pitch shift.
+// A second read pointer (crossfade grain) eliminates discontinuities when the
+// read pointer wraps around.
 class PitchShifter
 {
 public:
-    static constexpr int kFftSize    = 2048;
-    static constexpr int kHopSize    = kFftSize / 4;
-    static constexpr int kOverlap    = kFftSize / kHopSize;
+    static constexpr int kBufSize  = 8192;   // must be power of 2
+    static constexpr int kGrainSize = 1024;  // crossfade window in samples
 
     PitchShifter();
 
-    void prepare (double sampleRate);
-    void reset();
-    void setPitchRatio (float ratio);  // e.g. 1.5f = up a fifth
-    float processSample (float in);    // push one sample, pop one sample
+    void  prepare (double sampleRate);
+    void  reset();
+    void  setPitchRatio (float ratio);
+    float processSample (float in);
 
 private:
-    void processFrame();
+    float    pitchRatio  = 1.0f;
 
-    double sampleRate = 44100.0;
-    float  pitchRatio = 1.0f;
+    std::array<float, kBufSize> buf {};
+    int   writePos  = 0;
+    float readPos   = 0.f;
+    float readPos2  = 0.f;   // second grain for crossfade
+    bool  useSecond = false;
 
-    // Input / output circular buffers
-    std::vector<float> inBuf;
-    std::vector<float> outBuf;
-    int inWritePos  = 0;
-    int outReadPos  = 0;
-    int outWritePos = 0;
-    int inputFill   = 0;   // samples accumulated since last frame
-
-    // FFT
-    std::unique_ptr<juce::dsp::FFT> fft;
-
-    // Phase accumulators
-    std::vector<float> lastPhase;
-    std::vector<float> synthPhase;
-
-    // Hann window
-    std::vector<float> window;
-
-    // Work buffers
-    std::vector<float>               timeDomain;
-    std::vector<std::complex<float>> freqDomain;
-
-    int outputLatency = 0;  // samples buffered before first output
+    // Hann crossfade window
+    std::array<float, kGrainSize> window {};
+    int   grainPos  = 0;     // position within crossfade window
 };
 
 // ── Presets ───────────────────────────────────────────────────────────────────
 struct ChoirBoxPreset
 {
     const char* name;
-    float upSemitones;    // -24 to +24
-    float downSemitones;  // -24 to +24
-    float voices;         // 1 to 4
-    float detune;         // 0 to 100 cents
-    float dryLevel;       // 0 to 1
-    float upLevel;        // 0 to 1
-    float downLevel;      // 0 to 1
-    float saturation;     // 0 to 1
-    float crush;          // 0 to 1
-    float distMix;        // 0 to 1
-    float masterOut;      // 0 to 2
+    float upSemitones;
+    float downSemitones;
+    float voices;
+    float detune;
+    float dryLevel;
+    float upLevel;
+    float downLevel;
+    float saturation;
+    float crush;
+    float distMix;
+    float masterOut;
 };
 
 static const ChoirBoxPreset kPresets[] =
@@ -79,7 +64,6 @@ static const ChoirBoxPreset kPresets[] =
 };
 static constexpr int kNumPresets = (int)(sizeof(kPresets) / sizeof(kPresets[0]));
 
-// Max voice pairs — 4 up + 4 down = 8 pitch shifter pairs (stereo = 16 instances)
 static constexpr int kMaxVoices = 4;
 
 // ── Processor ─────────────────────────────────────────────────────────────────
@@ -120,7 +104,7 @@ private:
     int    currentPreset     = 0;
     double currentSampleRate = 44100.0;
 
-    // kMaxVoices pitch shifters per side (up/down), stereo (L/R)
+    // kMaxVoices shifters per direction, per channel (L/R)
     std::array<PitchShifter, kMaxVoices> upShifterL;
     std::array<PitchShifter, kMaxVoices> upShifterR;
     std::array<PitchShifter, kMaxVoices> downShifterL;

@@ -52,7 +52,7 @@ juce::Point<float> ChoirBoxEditor::knobCenter (int index) const
                                : kRow3Y;
 
     // Evenly distribute knobs across width with generous margins
-    const float margin = 80.f;
+    const float margin = 120.f;
     const float span   = kW - 2.f * margin;
     float x;
 
@@ -167,7 +167,6 @@ void ChoirBoxEditor::mouseDoubleClick (const juce::MouseEvent& e)
 void ChoirBoxEditor::paint (juce::Graphics& g)
 {
     drawChassis       (g);
-    drawSectionPanels (g);
     drawHeader        (g);
     drawSectionLabels (g);
     drawAllKnobs      (g);
@@ -276,7 +275,7 @@ void ChoirBoxEditor::drawSectionLabels (juce::Graphics& g)
     auto drawLabel = [&](const juce::String& text, float centreY)
     {
         const float panelH  = 115.f;
-        const float margin  = 55.f;
+        const float margin  = 120.f;
         const float panelY  = centreY - panelH * 0.5f;
 
         // Small label tab sitting above the panel
@@ -284,10 +283,12 @@ void ChoirBoxEditor::drawSectionLabels (juce::Graphics& g)
         g.drawText (text, (int)margin, (int)panelY - 14, 200, 11,
                     juce::Justification::left);
 
-        // Thin accent line to the right of label
-        float textW = shareTechMono.withHeight (8.5f).getStringWidth (text) + 8.f;
+        // Divider line — wider than knob span, extends 20px beyond each side
+        const float lineStart = margin - 20.f;
+        const float lineEnd   = kW - margin + 20.f;
+        const float tw = shareTechMono.withHeight (8.5f).getStringWidth (text) + 8.f;
         g.setColour (kAccent.withAlpha (0.2f));
-        g.drawLine (margin + textW, panelY - 8.f, kW - margin, panelY - 8.f, 0.8f);
+        g.drawLine (margin + tw, panelY - 8.f, lineEnd, panelY - 8.f, 0.8f);
     };
 
     drawLabel ("PITCH & VOICES",  kRow1Y);

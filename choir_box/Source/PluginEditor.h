@@ -5,7 +5,7 @@
 
 // ── Layout constants ──────────────────────────────────────────────────────────
 static constexpr float kW = 700.f;
-static constexpr float kH = 480.f;
+static constexpr float kH = 510.f;
 
 // Knob geometry
 static constexpr float kKnobR = 28.f;
@@ -15,9 +15,9 @@ static constexpr float kArcR  = kKnobR + 7.f;
 static const juce::Colour kAccent { 0xff4ecdc4 };
 
 // Row Y centres
-static constexpr float kRow1Y = 170.f;
-static constexpr float kRow2Y = 300.f;
-static constexpr float kRow3Y = 415.f;
+static constexpr float kRow1Y = 185.f;
+static constexpr float kRow2Y = 318.f;
+static constexpr float kRow3Y = 432.f;
 
 // Knob descriptor
 struct KnobDef
