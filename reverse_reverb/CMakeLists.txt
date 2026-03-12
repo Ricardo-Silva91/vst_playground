@@ -24,7 +24,7 @@ juce_add_plugin(reverse_reverb
     PLUGIN_MANUFACTURER_CODE Manu
     PLUGIN_CODE Rev1
     FORMATS              VST3
-    PRODUCT_NAME         "reverse_reverb"
+    PRODUCT_NAME         "Reverse Reverb"
 )
 
 target_sources(reverse_reverb
