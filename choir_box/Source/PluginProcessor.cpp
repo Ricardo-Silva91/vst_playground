@@ -32,12 +32,14 @@ PitchShifter::PitchShifter()
     outMag            .resize ((size_t)kNumBins, 0.f);
     outFreq           .resize ((size_t)kNumBins, 0.f);
 
-    // Hann window — sqrt-Hann for perfect reconstruction with 4x overlap
+    // Hann window — length kFftSize+1, use only first kFftSize samples.
+    // The +1 is required for correct overlap-add cancellation (JUCE convention).
+    // NOT sqrt-Hann — plain Hann applied at both analysis and synthesis stages.
+    // With plain Hann twice and 4x overlap, OLA gain = 1.5, corrected by norm = 2/3.
     for (int i = 0; i < kFftSize; ++i)
     {
-        float h = 0.5f * (1.f - std::cos (2.f * juce::MathConstants<float>::pi
-                                           * (float)i / (float)(kFftSize - 1)));
-        window[(size_t)i] = std::sqrt (h);
+        window[(size_t)i] = 0.5f * (1.f - std::cos (2.f * juce::MathConstants<float>::pi
+                                                      * (float)i / (float)kFftSize)); // note: kFftSize not kFftSize-1
     }
 }
 
@@ -178,9 +180,9 @@ void PitchShifter::processFrame()
     fft->performRealOnlyInverseTransform (fftBuffer.data());
 
     // ── 7. Overlap-add ────────────────────────────────────────────────────────
-    // sqrt-Hann + 4x overlap → perfect reconstruction; scale by 2/kFftSize
-    // (JUCE IFFT does not normalise, so we do it here)
-    const float norm = 2.f / (float)kFftSize;
+    // JUCE IFFT normalises by 1/N internally. Plain Hann applied twice with
+    // 4x overlap gives OLA gain of 1.5, so compensation factor = 2/3.
+    const float norm = 2.f / 3.f;
 
     for (int i = 0; i < kFftSize; ++i)
         outAccum[(size_t)i] += fftBuffer[(size_t)i] * window[(size_t)i] * norm;
