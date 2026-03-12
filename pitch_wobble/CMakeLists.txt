@@ -25,7 +25,7 @@ juce_add_plugin(pitch_wobble
     PLUGIN_MANUFACTURER_CODE Mypg
     PLUGIN_CODE Pwob
     FORMATS              VST3
-    PRODUCT_NAME         "pitch_wobble"
+    PRODUCT_NAME         "Pitch Wobble"
 )
 
 target_sources(pitch_wobble
