@@ -107,35 +107,25 @@ void PitchShifter::processFrame()
     const float twoPi = 2.f * juce::MathConstants<float>::pi;
 
     // ── 1. Build windowed analysis frame from input history ───────────────────
-    // inputHistory is a ring buffer; newest sample is at historyIdx-1
+    // Copy the last kFftSize samples from the ring buffer into the FFT work
+    // buffer (first half), zero the second half (required by JUCE real FFT).
     for (int i = 0; i < kFftSize; ++i)
     {
         int srcIdx = (historyIdx - kFftSize + i) & (kFftSize - 1);
-        fftBuffer[(size_t)i]            = inputHistory[(size_t)srcIdx] * window[(size_t)i];
+        fftBuffer[(size_t)i]              = inputHistory[(size_t)srcIdx] * window[(size_t)i];
         fftBuffer[(size_t)(i + kFftSize)] = 0.f;
     }
 
-    // ── 2. Forward FFT (in-place, real-only) ──────────────────────────────────
-    // After this call, fftBuffer contains interleaved re/im pairs for bins 0..kFftSize-1
-    // JUCE packs: [re0, re(N/2), re1, im1, re2, im2, ...]
-    // i.e. bin 0 dc = fftBuffer[0], bin N/2 nyquist = fftBuffer[1],
-    //      bin k  = (fftBuffer[2k], fftBuffer[2k+1]) for k=1..N/2-1
+    // ── 2. Forward FFT ────────────────────────────────────────────────────────
+    // JUCE real-only forward transform with onlyCalculateNonNegativeFrequencies=true.
+    // Output: plain interleaved re/im pairs, bin k at [k*2] and [k*2+1].
+    // Only the first (kFftSize/2 + 1) complex pairs are valid.
     fft->performRealOnlyForwardTransform (fftBuffer.data(), true);
 
-    // ── 3. Unpack bins, compute magnitude and true frequency ──────────────────
+    // ── 3. Analysis: magnitude + true instantaneous frequency ────────────────
     const float expectedPhaseInc = twoPi * (float)kHopSize / (float)kFftSize;
 
-    // Bin 0 (DC)
-    mag[(size_t)0]      = std::fabs (fftBuffer[0]);
-    trueFreq[(size_t)0] = 0.f;
-    lastAnalysisPhase[(size_t)0] = 0.f;
-
-    // Bin kFftSize/2 (Nyquist) — packed at index 1
-    mag[(size_t)(kNumBins - 1)]      = std::fabs (fftBuffer[1]);
-    trueFreq[(size_t)(kNumBins - 1)] = juce::MathConstants<float>::pi;
-    lastAnalysisPhase[(size_t)(kNumBins - 1)] = 0.f;
-
-    for (int k = 1; k < kNumBins - 1; ++k)
+    for (int k = 0; k < kNumBins; ++k)
     {
         float re = fftBuffer[(size_t)(k * 2)];
         float im = fftBuffer[(size_t)(k * 2 + 1)];
@@ -144,19 +134,18 @@ void PitchShifter::processFrame()
 
         float phase = std::atan2 (im, re);
 
-        // Phase difference from last frame
-        float delta = phase - lastAnalysisPhase[(size_t)k];
+        // Phase deviation from expected advance for this bin
+        float delta = phase - lastAnalysisPhase[(size_t)k] - (float)k * expectedPhaseInc;
         lastAnalysisPhase[(size_t)k] = phase;
 
-        // Remove expected phase advance, wrap to -pi..pi
-        delta -= (float)k * expectedPhaseInc;
-        delta  = delta - twoPi * std::round (delta / twoPi);
+        // Wrap to -pi..pi
+        delta -= twoPi * std::round (delta / twoPi);
 
-        // True frequency of this bin (in radians per sample, normalised to bin)
-        trueFreq[(size_t)k] = ((float)k + delta / expectedPhaseInc);
+        // True frequency expressed in bin units
+        trueFreq[(size_t)k] = (float)k + delta / expectedPhaseInc;
     }
 
-    // ── 4. Pitch shift — map bins to new positions ────────────────────────────
+    // ── 4. Pitch shift — scatter bins to new positions ────────────────────────
     std::fill (outMag.begin(),  outMag.end(),  0.f);
     std::fill (outFreq.begin(), outFreq.end(), 0.f);
 
@@ -170,32 +159,31 @@ void PitchShifter::processFrame()
         }
     }
 
-    // ── 5. Accumulate synthesis phase and reconstruct bins ────────────────────
-    // DC and Nyquist
-    fftBuffer[0] = outMag[(size_t)0];
-    fftBuffer[1] = outMag[(size_t)(kNumBins - 1)];
-
-    for (int k = 1; k < kNumBins - 1; ++k)
+    // ── 5. Synthesis: accumulate phase, reconstruct complex bins ─────────────
+    for (int k = 0; k < kNumBins; ++k)
     {
         synthPhase[(size_t)k] += outFreq[(size_t)k] * expectedPhaseInc;
         float s = synthPhase[(size_t)k];
         fftBuffer[(size_t)(k * 2)]     = outMag[(size_t)k] * std::cos (s);
         fftBuffer[(size_t)(k * 2 + 1)] = outMag[(size_t)k] * std::sin (s);
     }
+    // Zero the negative-frequency half that JUCE doesn't use but may inspect
+    for (int k = kNumBins; k < kFftSize; ++k)
+    {
+        fftBuffer[(size_t)(k * 2)]     = 0.f;
+        fftBuffer[(size_t)(k * 2 + 1)] = 0.f;
+    }
 
     // ── 6. Inverse FFT ────────────────────────────────────────────────────────
     fft->performRealOnlyInverseTransform (fftBuffer.data());
 
-    // ── 7. Overlap-add with synthesis window and normalisation ────────────────
-    // With sqrt-Hann and 4x overlap, the normalisation factor is kFftSize/2
-    const float norm = 1.f / ((float)kFftSize * 0.5f);
+    // ── 7. Overlap-add ────────────────────────────────────────────────────────
+    // sqrt-Hann + 4x overlap → perfect reconstruction; scale by 2/kFftSize
+    // (JUCE IFFT does not normalise, so we do it here)
+    const float norm = 2.f / (float)kFftSize;
 
     for (int i = 0; i < kFftSize; ++i)
-    {
-        size_t idx = (size_t)i;
-        if (idx < outAccum.size())
-            outAccum[idx] += fftBuffer[idx] * window[idx] * norm;
-    }
+        outAccum[(size_t)i] += fftBuffer[(size_t)i] * window[(size_t)i] * norm;
 }
 
 // ── ChoirBoxProcessor ─────────────────────────────────────────────────────────
