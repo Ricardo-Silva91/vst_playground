@@ -117,12 +117,20 @@ juce::String ChoirBoxEditor::getValueText (int i) const
 void ChoirBoxEditor::mouseDown (const juce::MouseEvent& e)
 {
     int k = knobHitTest (e.position);
-    if (k >= 0)
+    if (k < 0) return;
+
+    if (e.mods.isRightButtonDown())
     {
-        draggingKnob = k;
-        dragStartY   = e.position.y;
-        dragStartVal = getNorm (k);
+        // Reset to default value
+        auto* param = proc.apvts.getParameter (kKnobDefs[k].paramId);
+        if (param) param->setValueNotifyingHost (param->getDefaultValue());
+        repaint();
+        return;
     }
+
+    draggingKnob = k;
+    dragStartY   = e.position.y;
+    dragStartVal = getNorm (k);
 }
 
 void ChoirBoxEditor::mouseDrag (const juce::MouseEvent& e)
