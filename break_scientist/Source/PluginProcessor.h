@@ -2,17 +2,16 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_dsp/juce_dsp.h>
 #include <vector>
-#include <array>
 
 // ── Preset struct ─────────────────────────────────────────────────────────────
 struct BreakPreset
 {
     const char* name;
-    float swing;          // 0.5–0.75  (50%=straight, 75%=heavy shuffle)
-    float humanize;       // 0–1       (random micro-offset depth)
-    float drag;           // 0–1       (consistent pull-back on all hits, maps to 0–80ms)
-    float sensitivity;    // 0–1       (transient detection threshold)
-    float velocityVar;    // 0–1       (hit amplitude reshaping)
+    float swing;          // 0.50–0.85
+    float humanize;       // 0–1  (maps to ±80ms)
+    float drag;           // 0–1  (maps to 0–200ms)
+    float sensitivity;    // 0–1
+    float velocityVar;    // 0–1
     float wetMix;         // 0–1
 };
 
@@ -20,17 +19,17 @@ static const BreakPreset kPresets[] =
 {
     // name              swing   hum    drag   sens   vel    wet
     // ── Classic ───────────────────────────────────────────────────────────────
-    { "Donuts",          0.68f,  0.75f, 0.65f, 0.55f, 0.60f, 1.0f  },  // Heavy Dilla pocket
-    { "MPC Straight",    0.58f,  0.15f, 0.10f, 0.50f, 0.25f, 1.0f  },  // Clean boom bap
-    { "Drunk Shuffle",   0.62f,  0.95f, 0.30f, 0.45f, 0.50f, 1.0f  },  // Falling-apart feel
-    { "Jungle Step",     0.55f,  0.10f, 0.05f, 0.60f, 0.15f, 1.0f  },  // Tight Amen territory
-    { "Ghost Town",      0.60f,  0.40f, 0.20f, 0.35f, 0.90f, 1.0f  },  // Ghost hits everywhere
-    { "Straight Up",     0.50f,  0.05f, 0.00f, 0.50f, 0.05f, 1.0f  },  // Near-bypass
+    { "Donuts",          0.68f,  0.75f, 0.65f, 0.55f, 0.60f, 1.0f  },
+    { "MPC Straight",    0.58f,  0.15f, 0.10f, 0.50f, 0.25f, 1.0f  },
+    { "Drunk Shuffle",   0.62f,  0.95f, 0.30f, 0.45f, 0.50f, 1.0f  },
+    { "Jungle Step",     0.55f,  0.10f, 0.05f, 0.60f, 0.15f, 1.0f  },
+    { "Ghost Town",      0.60f,  0.40f, 0.20f, 0.35f, 0.90f, 1.0f  },
+    { "Straight Up",     0.50f,  0.05f, 0.00f, 0.50f, 0.05f, 1.0f  },
     // ── Aggressive ────────────────────────────────────────────────────────────
-    { "Off The Grid",    0.80f,  1.00f, 0.90f, 0.50f, 0.70f, 1.0f  },  // Extreme swing+drag+chaos
-    { "Wrong Tempo",     0.75f,  0.85f, 1.00f, 0.45f, 0.40f, 1.0f  },  // Maximum drag, feels broken
-    { "Slipping Away",   0.70f,  1.00f, 0.50f, 0.40f, 0.80f, 1.0f  },  // High humanize dominates
-    { "Trap Drunk",      0.82f,  0.60f, 0.75f, 0.55f, 0.55f, 1.0f  },  // Heavy swing, moderate drag
+    { "Off The Grid",    0.80f,  1.00f, 0.90f, 0.50f, 0.70f, 1.0f  },
+    { "Wrong Tempo",     0.75f,  0.85f, 1.00f, 0.45f, 0.40f, 1.0f  },
+    { "Slipping Away",   0.70f,  1.00f, 0.50f, 0.40f, 0.80f, 1.0f  },
+    { "Trap Drunk",      0.82f,  0.60f, 0.75f, 0.55f, 0.55f, 1.0f  },
 };
 static constexpr int kNumPresets = (int)(sizeof(kPresets) / sizeof(kPresets[0]));
 
@@ -51,7 +50,7 @@ public:
     const juce::String getName()    const override { return "Break Scientist"; }
     bool acceptsMidi()              const override { return false; }
     bool producesMidi()             const override { return false; }
-    double getTailLengthSeconds()   const override { return 1.0; }
+    double getTailLengthSeconds()   const override { return 2.0; }
 
     int  getNumPrograms()    override { return kNumPresets; }
     int  getCurrentProgram() override { return currentPreset; }
@@ -69,67 +68,73 @@ private:
     juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
     void applyPreset (int index);
 
-    // ── Architecture overview ─────────────────────────────────────────────────
+    // ── Architecture ──────────────────────────────────────────────────────────
     //
-    // We use a large pre-roll (input) ring buffer — 1 second at the current
-    // sample rate. All incoming audio is written into it continuously.
+    // Latency = 2 seconds. The read pointer lags the write pointer by exactly
+    // this amount. By the time we output a sample, we have 2 full seconds of
+    // future audio already sitting in the ring buffer.
     //
-    // The output is assembled into a matching output ring buffer, initialised
-    // to silence. When a transient is detected we:
-    //   1. Note the onset position in the input ring buffer.
-    //   2. Calculate a total displacement (drag + swing + humanize).
-    //   3. Copy a window of audio (~120ms) from the input ring buffer,
-    //      scaled by the velocity gain, into the output ring buffer at
-    //      (onset_position + displacement), using a Hann-window envelope
-    //      to ensure clean fade-in and fade-out on every hit.
-    //   4. Mark those output positions in ringOutMask so the original
-    //      pass-through audio is suppressed there (avoiding doubling).
+    // Onset detection runs on the WRITE side (incoming audio), 2 seconds ahead
+    // of what we're currently outputting. When we detect an onset at write
+    // position W, we:
     //
-    // The output ring buffer read position always lags the write position by
-    // exactly `lookaheadSamples`. This is reported to the host as latency so
-    // the DAW compensates automatically during playback.
-    // After consolidating/freezing the track the latency offset disappears.
+    //   1. Scan forward from W to find the true peak of the hit (up to 20ms)
+    //      — this anchors the Hann window at the actual attack, not the rise
+    //   2. Calculate displacement (drag + swing + humanize)
+    //   3. Write a Hann-windowed copy of the hit into the output ring at
+    //      (W - lookaheadSamples + displacement), i.e. at the output-time
+    //      position corresponding to W, shifted by the displacement
+    //   4. Write a FULL suppression mask (1.0) immediately at the onset in
+    //      the output ring — not Hann-ramped, so the original is killed
+    //      instantly with no bleed. Only the OUTPUT copy uses Hann.
+    //
+    // Undetected hits (hi-hats, quiet transients below threshold) pass through
+    // the output ring untouched at their original positions.
     //
     // ─────────────────────────────────────────────────────────────────────────
 
-    static constexpr int kMaxDisplaceMs = 500;  // max total displacement budget
+    // 2 second lookahead
+    static constexpr int    kLookaheadMs   = 2000;
+    // Max displacement budget (must be < kLookaheadMs)
+    static constexpr int    kMaxDisplaceMs = 500;
+    // Hit window copied per onset (~150ms)
+    static constexpr double kHitWindowSec  = 0.150;
+    // How far forward to scan for the true peak after onset (20ms)
+    static constexpr double kPeakScanSec   = 0.020;
+    // Hard suppression window around each onset (covers full hit decay, 200ms)
+    static constexpr double kSuppressWindowSec = 0.200;
 
-    int    ringSize         = 0;   // set in prepareToPlay (kRingSeconds * sr)
-    int    lookaheadSamples = 0;   // reported latency = kMaxDisplaceMs converted
+    int ringSize         = 0;
+    int lookaheadSamples = 0;
 
-    // Input ring — raw incoming audio, written every block
-    std::vector<float> ringInL, ringInR;
-    int ringWritePos = 0;
+    std::vector<float> ringInL,   ringInR;    // raw input
+    std::vector<float> ringOutL,  ringOutR;   // assembled output (displaced hits)
+    std::vector<float> ringMask;              // suppression mask (0=passthru, 1=suppress)
 
-    // Output ring — pre-filled with silence; hit copies are added here
-    // at displaced positions. Pass-through fills any unmasked positions.
-    std::vector<float> ringOutL, ringOutR;
+    int ringWritePos = 0;   // advances with incoming audio
+    int ringReadPos  = 0;   // lags ringWritePos by lookaheadSamples
 
-    // Suppression mask: value in [0,1]. 1 = fully suppress the original
-    // pass-through signal at this position (a displaced hit is there instead).
-    std::vector<float> ringOutMask;
-
-    int ringReadPos = 0;   // lags ringWritePos by lookaheadSamples
-
-    // ── Transient detection ───────────────────────────────────────────────────
+    // ── Onset detection (runs at write position) ──────────────────────────────
+    // Peak-picking on a smoothed spectral flux / energy derivative.
+    // We track a fast envelope and a slow RMS; onset fires when the fast
+    // envelope exceeds (slow RMS × threshold).
     float envelope        = 0.f;
     float rmsSmooth       = 0.f;
     float runningRms      = 0.f;
     bool  inTransient     = false;
     int   cooldownSamples = 0;
 
-    // ── Swing / grid ──────────────────────────────────────────────────────────
-    double currentBpm        = 120.0;
-    double sixteenthSamples  = 0.0;
-    int    sixteenthCount    = 0;
-    int    gridPhase         = 0;
+    // ── Grid / swing ──────────────────────────────────────────────────────────
+    double currentBpm       = 120.0;
+    double sixteenthSamples = 0.0;
+    int    sixteenthCount   = 0;
+    int    gridPhase        = 0;
 
-    // IOI-based BPM fallback
-    int    lastOnsetRingPos  = -1;
-    double ioiEstimate       = 0.0;
-    int    ioiCount          = 0;
+    // IOI fallback
+    int    lastOnsetRingPos = -1;
+    double ioiEstimate      = 0.0;
+    int    ioiCount         = 0;
 
-    // ── RNG ───────────────────────────────────────────────────────────────────
     juce::Random rng;
 
     int    currentPreset     = 0;
