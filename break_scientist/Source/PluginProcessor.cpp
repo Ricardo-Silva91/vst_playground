@@ -208,68 +208,67 @@ void BreakScientistProcessor::processBlock (juce::AudioBuffer<float>& buffer,
                 gainScale = lo + rng.nextFloat() * (hi - lo);
             }
 
-            // ── 6. Suppress original hit in output ring ───────────────────────
-            // Scan forward from the peak to find where the hit envelope drops
-            // to 15% of the peak value — that's the natural end of the hit.
-            // Only suppress up to that point, capped hard at 80ms.
-            // This prevents blanking out the space between hits on sparse breaks.
-            const int   maxSuppressSamples = (int)(0.080 * currentSampleRate);
-            const float suppressThresh     = peakVal * 0.15f;
-            int suppressEnd = maxSuppressSamples;  // default: full cap
-            for (int s = peakScanSamples; s < maxSuppressSamples; ++s)
-            {
-                const int   scanPos = (onsetPos + s) % ringSize;
-                const float v = std::max (std::fabs (ringInL[scanPos]),
-                                          std::fabs (ringInR[scanPos]));
-                if (v < suppressThresh) { suppressEnd = s; break; }
-            }
-
-            for (int s = 0; s < suppressEnd; ++s)
-            {
-                const int mPos = (onsetPos + s) % ringSize;
-                ringMask[mPos] = 1.f;
-            }
-
-            // ── 7. Copy hit into output ring at displaced position ─────────────
-            // destStart is where the displaced hit should appear in output-time.
-            // The formula maps onsetPos (write-side) to its corresponding
-            // read-side position, then shifts by totalOffset.
+            // ── 6 & 7. Suppress original + copy to displaced position ────────
             //
-            //   write-side pos → read-side pos:
-            //   readSideOnset = onsetPos - lookaheadSamples  (mod ringSize)
+            // The mask and the output copy use the SAME envelope shape.
+            // At every sample position w within the hit window:
+            //   - original contribution  = passthrough × (1 - env)
+            //   - displaced contribution = copy        ×  env
             //
-            // We then add totalOffset to displace it.
+            // When env=0 the original plays untouched.
+            // When env=1 the original is fully suppressed and only the copy plays.
+            // At every point in between they crossfade smoothly.
+            //
+            // This means there are no discontinuities anywhere — the total
+            // signal is always a continuous blend, never a hard cut.
+            //
+            // Envelope shape: asymmetric cosine
+            //   - Fade-in  over fadeInSamples  (10% of window, before the peak)
+            //   - Hold at 1.0 for holdSamples  (the attack itself, always full)
+            //   - Fade-out over fadeOutSamples (remaining window, after the peak)
+            //
+            // The hold region ensures the transient punch is never attenuated
+            // by a ramp — it fires at full gain in both the copy and the mask.
+
             const int readSideOnset = (onsetPos - lookaheadSamples + ringSize) % ringSize;
             const int destStart     = (readSideOnset + totalOffset + ringSize) % ringSize;
 
-            // Hann window applied only to the OUTPUT copy, centred on the hit.
-            // The window is slightly asymmetric: short fade-in (10% of window)
-            // before the peak, longer fade-out (90%) after — preserves attack punch.
-            const int fadeInSamples  = hitWindowSamples / 10;
-            const int fadeOutSamples = hitWindowSamples - fadeInSamples;
+            const int fadeInSamples  = (int)(0.005 * currentSampleRate);  // 5ms fade in
+            const int holdSamples    = (int)(0.010 * currentSampleRate);  // 10ms hold at peak
+            const int fadeOutSamples = hitWindowSamples - fadeInSamples - holdSamples;
 
             for (int w = 0; w < hitWindowSamples; ++w)
             {
                 float env;
                 if (w < fadeInSamples)
                 {
-                    // Short fade in before the attack
+                    // Cosine ramp up: 0 → 1
                     env = 0.5f * (1.f - std::cos (juce::MathConstants<float>::pi
                                                    * (float)w / (float)fadeInSamples));
                 }
+                else if (w < fadeInSamples + holdSamples)
+                {
+                    // Hold at 1.0 through the attack transient
+                    env = 1.f;
+                }
                 else
                 {
-                    // Longer cosine fade out after the peak
-                    const int wo = w - fadeInSamples;
+                    // Cosine ramp down: 1 → 0
+                    const int wo = w - fadeInSamples - holdSamples;
                     env = 0.5f * (1.f + std::cos (juce::MathConstants<float>::pi
                                                    * (float)wo / (float)fadeOutSamples));
                 }
 
-                const int srcPos = (onsetPos + w) % ringSize;
+                const int srcPos = (onsetPos  + w) % ringSize;
                 const int dstPos = (destStart + w) % ringSize;
 
+                // Output copy: hit audio × envelope
                 ringOutL[dstPos] += ringInL[srcPos] * env * gainScale;
                 ringOutR[dstPos] += ringInR[srcPos] * env * gainScale;
+
+                // Suppression mask: same envelope shape, so original fades out
+                // exactly as the copy fades in — total energy stays constant.
+                ringMask[dstPos] = std::min (ringMask[dstPos] + env, 1.f);
             }
 
             // ── 8. IOI fallback BPM ───────────────────────────────────────────
