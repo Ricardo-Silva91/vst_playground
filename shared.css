@@ -188,11 +188,11 @@ footer {
   display: flex; flex-direction: column; gap: 0.25rem;
 }
 .installer-cmd-os {
-  font-family: var(--mono); font-size: 8px; letter-spacing: 0.2em; text-transform: uppercase;
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
   color: var(--text-dim);
 }
 .installer-cmd code {
-  font-family: var(--mono); font-size: 10px; color: var(--silk);
+  font-family: var(--mono); font-size: 13px; color: var(--silk);
   background: var(--panel); border: 1px solid #333;
   padding: 0.3rem 0.7rem; letter-spacing: 0.05em;
 }
@@ -352,7 +352,7 @@ footer {
 .param-name { font-family: var(--mono); font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.3rem; }
 .param-desc { font-size: 1rem; color: var(--text-dim); line-height: 1.65; }
 .param-desc strong { color: var(--text); font-weight: 600; }
-.param-range { font-family: var(--mono); font-size: 8px; color: #555; margin-top: 0.3rem; letter-spacing: 0.1em; }
+.param-range { font-family: var(--mono); font-size: 11px; color: #555; margin-top: 0.3rem; letter-spacing: 0.1em; }
 
 .usecase-list { display: flex; flex-direction: column; gap: 0.8rem; }
 .usecase-card { border-left: 2px solid var(--accent); padding: 0.8rem 1rem; background: rgba(var(--accent-rgb), 0.04); }
