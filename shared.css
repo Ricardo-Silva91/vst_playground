@@ -34,7 +34,7 @@ body {
   background: var(--chassis);
   color: var(--text);
   font-family: var(--sans);
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.6;
   overflow-x: hidden;
   background-image:
@@ -182,7 +182,7 @@ footer {
   font-family: var(--mono); font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase;
   color: var(--led-amber);
 }
-.installer-strip-desc { font-size: 0.9rem; color: var(--text-dim); line-height: 1.5; }
+.installer-strip-desc { font-size: 1rem; color: var(--text-dim); line-height: 1.5; }
 .installer-strip-cmds { display: flex; gap: 1.2rem; flex-shrink: 0; flex-wrap: wrap; }
 .installer-cmd {
   display: flex; flex-direction: column; gap: 0.25rem;
@@ -246,7 +246,7 @@ footer {
 .module-name-wrap { text-align: center; }
 .module-name { font-family: var(--sans); font-weight: 700; font-size: 1rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--silk); line-height: 1.2; text-shadow: 0 1px 0 rgba(255,255,255,0.07), 0 -1px 0 rgba(0,0,0,0.6); }
 .module-content { padding: 1.4rem 2rem; display: flex; flex-direction: column; justify-content: space-between; gap: 1rem; position: relative; }
-.module-desc { font-size: 0.95rem; color: var(--text-dim); line-height: 1.7; }
+.module-desc { font-size: 1rem; color: var(--text-dim); line-height: 1.7; }
 .module-desc strong { color: var(--text); font-weight: 600; }
 .module-bottom { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; flex-wrap: wrap; }
 .params-group { display: flex; flex-direction: column; gap: 0.4rem; }
@@ -311,7 +311,7 @@ footer {
 .knob-label { font-family: var(--mono); font-size: 7px; letter-spacing: 0.15em; color: var(--silk); text-align: center; text-transform: uppercase; }
 .hero-body { padding: 2rem 2.5rem; display: flex; flex-direction: column; gap: 1rem; justify-content: center; }
 .hero-tagline { font-family: var(--sans); font-weight: 600; font-size: 1.3rem; color: var(--accent); letter-spacing: 0.05em; }
-.hero-desc { font-size: 1rem; color: var(--text-dim); line-height: 1.8; max-width: 560px; }
+.hero-desc { font-size: 1.05rem; color: var(--text-dim); line-height: 1.8; max-width: 560px; }
 .hero-desc strong { color: var(--text); font-weight: 600; }
 .hero-dl { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
 
@@ -342,7 +342,7 @@ footer {
   box-shadow: 0 2px 4px rgba(0,0,0,0.4), 0 0 8px rgba(var(--accent-rgb), 0.1);
 }
 .chain-arrow { font-family: var(--mono); font-size: 10px; color: #333; padding: 0 0.3rem; flex-shrink: 0; }
-.chain-note { font-family: var(--mono); font-size: 8px; color: var(--text-dim); margin-top: 0.6rem; letter-spacing: 0.05em; line-height: 1.6; }
+.chain-note { font-family: var(--mono); font-size: 9px; color: var(--text-dim); margin-top: 0.6rem; letter-spacing: 0.05em; line-height: 1.7; }
 
 .param-list { display: flex; flex-direction: column; gap: 0.8rem; }
 .param-card {
@@ -350,21 +350,21 @@ footer {
   padding: 0.9rem 1.1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03);
 }
 .param-name { font-family: var(--mono); font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.3rem; }
-.param-desc { font-size: 0.9rem; color: var(--text-dim); line-height: 1.65; }
+.param-desc { font-size: 1rem; color: var(--text-dim); line-height: 1.65; }
 .param-desc strong { color: var(--text); font-weight: 600; }
 .param-range { font-family: var(--mono); font-size: 8px; color: #555; margin-top: 0.3rem; letter-spacing: 0.1em; }
 
 .usecase-list { display: flex; flex-direction: column; gap: 0.8rem; }
 .usecase-card { border-left: 2px solid var(--accent); padding: 0.8rem 1rem; background: rgba(var(--accent-rgb), 0.04); }
 .usecase-title { font-family: var(--sans); font-weight: 600; font-size: 0.95rem; color: var(--text); letter-spacing: 0.05em; margin-bottom: 0.3rem; }
-.usecase-body { font-size: 0.9rem; color: var(--text-dim); line-height: 1.65; }
+.usecase-body { font-size: 1rem; color: var(--text-dim); line-height: 1.65; }
 .usecase-body strong { color: var(--text); }
 .usecase-settings { font-family: var(--mono); font-size: 8px; color: var(--accent); margin-top: 0.4rem; letter-spacing: 0.1em; opacity: 0.8; }
 
 .tip-list { display: flex; flex-direction: column; gap: 0.7rem; }
 .tip { display: flex; gap: 0.8rem; align-items: flex-start; padding: 0.7rem 0.9rem; background: var(--metal); border: 1px solid #2a2a2a; border-left: 2px solid var(--led-amber); }
 .tip-icon { color: var(--led-amber); font-size: 0.8rem; flex-shrink: 0; margin-top: 0.1rem; }
-.tip-text { font-size: 0.9rem; color: var(--text-dim); line-height: 1.65; }
+.tip-text { font-size: 1rem; color: var(--text-dim); line-height: 1.65; }
 .tip-text strong { color: var(--text); }
 
 /* Drum Smash section headers */
@@ -373,12 +373,12 @@ footer {
 .section-name { font-family: var(--mono); font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.5rem; }
 .section-name::before { content: ''; width: 4px; height: 4px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 4px var(--accent); flex-shrink: 0; }
 .section-params { font-family: var(--mono); font-size: 8px; color: var(--text-dim); letter-spacing: 0.05em; line-height: 1.8; }
-.section-desc { font-size: 0.85rem; color: var(--text-dim); line-height: 1.6; margin-top: 0.4rem; }
+.section-desc { font-size: 0.95rem; color: var(--text-dim); line-height: 1.6; margin-top: 0.4rem; }
 .section-desc strong { color: var(--text); }
 .preset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.7rem; }
 .preset-card { background: var(--metal); border: 1px solid #2a2a2a; border-top-color: #333; border-left: 2px solid var(--accent); padding: 0.8rem 1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.4); }
 .preset-name { font-family: var(--mono); font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--led-amber); margin-bottom: 0.3rem; }
-.preset-desc { font-size: 0.85rem; color: var(--text-dim); line-height: 1.5; }
+.preset-desc { font-size: 0.95rem; color: var(--text-dim); line-height: 1.5; }
 
 /* ── LOGO ── */
 .logo-img {
