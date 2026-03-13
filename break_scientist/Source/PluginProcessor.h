@@ -101,9 +101,6 @@ private:
     static constexpr double kHitWindowSec  = 0.150;
     // How far forward to scan for the true peak after onset (20ms)
     static constexpr double kPeakScanSec   = 0.020;
-    // Hard suppression window around each onset (covers full hit decay, 200ms)
-    static constexpr double kSuppressWindowSec = 0.200;
-
     int ringSize         = 0;
     int lookaheadSamples = 0;
 

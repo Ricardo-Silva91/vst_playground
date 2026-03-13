@@ -134,8 +134,6 @@ void BreakScientistProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 
     const int hitWindowSamples  = (int)(kHitWindowSec    * currentSampleRate);
     const int peakScanSamples   = (int)(kPeakScanSec     * currentSampleRate);
-    const int suppressSamples   = (int)(kSuppressWindowSec * currentSampleRate);
-
     const float* inL  = buffer.getReadPointer (0);
     const float* inR  = (numChannels > 1) ? buffer.getReadPointer (1) : inL;
     float*       outL = buffer.getWritePointer (0);
@@ -211,11 +209,22 @@ void BreakScientistProcessor::processBlock (juce::AudioBuffer<float>& buffer,
             }
 
             // ── 6. Suppress original hit in output ring ───────────────────────
-            // Write mask = 1.0 immediately from the onset, covering the full
-            // suppress window. This is a HARD gate — no Hann ramp here.
-            // The original hit is killed completely so there's no bleed under
-            // the displaced copy.
-            for (int s = 0; s < suppressSamples; ++s)
+            // Scan forward from the peak to find where the hit envelope drops
+            // to 15% of the peak value — that's the natural end of the hit.
+            // Only suppress up to that point, capped hard at 80ms.
+            // This prevents blanking out the space between hits on sparse breaks.
+            const int   maxSuppressSamples = (int)(0.080 * currentSampleRate);
+            const float suppressThresh     = peakVal * 0.15f;
+            int suppressEnd = maxSuppressSamples;  // default: full cap
+            for (int s = peakScanSamples; s < maxSuppressSamples; ++s)
+            {
+                const int   scanPos = (onsetPos + s) % ringSize;
+                const float v = std::max (std::fabs (ringInL[scanPos]),
+                                          std::fabs (ringInR[scanPos]));
+                if (v < suppressThresh) { suppressEnd = s; break; }
+            }
+
+            for (int s = 0; s < suppressEnd; ++s)
             {
                 const int mPos = (onsetPos + s) % ringSize;
                 ringMask[mPos] = 1.f;
