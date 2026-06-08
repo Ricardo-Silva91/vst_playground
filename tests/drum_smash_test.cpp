@@ -197,7 +197,7 @@ TEST_CASE("DrumSmash - audio processing", "[drum_smash]")
         setParam(proc.apvts, "outputGain",     1.f);
 
         proc.prepareToPlay(44100.0, 512);
-        flushWithSilence(proc, 5);
+        flushWithSilence(proc, 100);
 
         juce::AudioBuffer<float> buf(2, 512);
         fillWithSine(buf, 1000.f, 44100.0, 0.5f);
@@ -207,7 +207,7 @@ TEST_CASE("DrumSmash - audio processing", "[drum_smash]")
         // Low cutoff
         setParam(proc.apvts, "lpfCutoff", 200.f);
         proc.prepareToPlay(44100.0, 512);
-        flushWithSilence(proc, 5);
+        flushWithSilence(proc, 100);
 
         fillWithSine(buf, 1000.f, 44100.0, 0.5f);
         proc.processBlock(buf, midi);

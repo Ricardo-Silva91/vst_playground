@@ -125,7 +125,7 @@ TEST_CASE("ThroughTheWall - audio processing", "[through_the_wall]")
 
         setParam(proc.apvts, "distance", 0.0f);
         proc.prepareToPlay(44100.0, 512);
-        flushWithSilence(proc);
+        flushWithSilence(proc, 100);
 
         juce::AudioBuffer<float> buf(2, 512);
         fillWithSine(buf, 440.f, 44100.0, 0.5f);
@@ -134,7 +134,7 @@ TEST_CASE("ThroughTheWall - audio processing", "[through_the_wall]")
 
         setParam(proc.apvts, "distance", 1.0f);
         proc.prepareToPlay(44100.0, 512);
-        flushWithSilence(proc);
+        flushWithSilence(proc, 100);
 
         fillWithSine(buf, 440.f, 44100.0, 0.5f);
         proc.processBlock(buf, midi);
