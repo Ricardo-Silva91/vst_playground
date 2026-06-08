@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(BreakScientist VERSION 1.0.0)
+project(break_scientist VERSION 1.0.0)
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -12,12 +12,12 @@ juce_add_binary_data(BreakScientistData
         ${CMAKE_CURRENT_SOURCE_DIR}/logo_transparent.svg
 )
 
-juce_add_plugin(BreakScientist
-    PLUGIN_MANUFACTURER_CODE Manu
+juce_add_plugin(break_scientist
+    PLUGIN_MANUFACTURER_CODE LvsT
     PLUGIN_CODE Brks
     FORMATS              VST3
     PRODUCT_NAME         "Break Scientist"
-    COMPANY_NAME         "YourName"
+    COMPANY_NAME         "lizard vst"
     IS_SYNTH             FALSE
     NEEDS_MIDI_INPUT     FALSE
     NEEDS_MIDI_OUTPUT    FALSE
@@ -26,20 +26,26 @@ juce_add_plugin(BreakScientist
     VST3_CATEGORIES      "Fx"
 )
 
-juce_generate_juce_header(BreakScientist)
+juce_generate_juce_header(break_scientist)
 
-target_sources(BreakScientist PRIVATE
+target_sources(break_scientist PRIVATE
     Source/PluginProcessor.cpp
     Source/PluginEditor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../shared/SharedEditorUtils.cpp
 )
 
-target_compile_definitions(BreakScientist PUBLIC
+target_include_directories(break_scientist
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../shared
+)
+
+target_compile_definitions(break_scientist PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0
     JUCE_VST3_CAN_REPLACE_VST2=0
 )
 
-target_link_libraries(BreakScientist
+target_link_libraries(break_scientist
     PRIVATE
         BreakScientistData
         juce::juce_audio_utils

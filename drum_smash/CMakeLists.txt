@@ -13,11 +13,11 @@ juce_add_binary_data(DrumSmashData
 )
 
 juce_add_plugin(drum_smash
-    PLUGIN_MANUFACTURER_CODE Anth
+    PLUGIN_MANUFACTURER_CODE LvsT
     PLUGIN_CODE Dsms
     FORMATS VST3
     PRODUCT_NAME "Drum Smash"
-    COMPANY_NAME "Anthropic"
+    COMPANY_NAME "lizard vst"
     IS_SYNTH FALSE
     NEEDS_MIDI_INPUT FALSE
     NEEDS_MIDI_OUTPUT FALSE
@@ -31,6 +31,12 @@ juce_generate_juce_header(drum_smash)
 target_sources(drum_smash PRIVATE
     Source/PluginProcessor.cpp
     Source/PluginEditor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../shared/SharedEditorUtils.cpp
+)
+
+target_include_directories(drum_smash
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../shared
 )
 
 target_compile_definitions(drum_smash PUBLIC

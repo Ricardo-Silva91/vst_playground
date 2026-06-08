@@ -2,6 +2,7 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "PluginProcessor.h"
+#include "SharedEditorUtils.h"
 
 class ReverseReverbAudioProcessorEditor : public juce::AudioProcessorEditor,
                                           private juce::Timer
@@ -34,14 +35,11 @@ private:
     void mouseUp         (const juce::MouseEvent&) override;
     void mouseDoubleClick(const juce::MouseEvent&) override;
 
-    void drawChassis  (juce::Graphics&);
-    void drawScrews   (juce::Graphics&);
-    void drawPlugin   (juce::Graphics&);
-    void drawKnob     (juce::Graphics&, float cx, float cy, float value,
-                       const juce::String& label, const juce::String& valueText);
-    void drawScanLines(juce::Graphics&, juce::Rectangle<float> area, float opacity);
+    void drawPlugin(juce::Graphics&);
+    void drawKnob  (juce::Graphics&, float cx, float cy, float value,
+                    const juce::String& label, const juce::String& valueText);
 
-    juce::Point<float> knobCenter(int index) const;
+    juce::Point<float> knobCenter (int index) const;
     int                knobHitTest(juce::Point<float>) const;
 
     float normRoom()   const;

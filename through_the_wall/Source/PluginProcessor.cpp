@@ -1,5 +1,6 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "SharedProcessorUtils.h"
 
 juce::AudioProcessorValueTreeState::ParameterLayout ThroughTheWallAudioProcessor::createParameterLayout()
 {
@@ -200,16 +201,12 @@ void ThroughTheWallAudioProcessor::applyPreset(int index)
 
 void ThroughTheWallAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
 {
-    auto state = apvts.copyState();
-    std::unique_ptr<juce::XmlElement> xml(state.createXml());
-    copyXmlToBinary(*xml, destData);
+    SharedProcessorUtils::saveState(*this, apvts, destData);
 }
 
 void ThroughTheWallAudioProcessor::setStateInformation(const void* data, int sizeInBytes)
 {
-    std::unique_ptr<juce::XmlElement> xmlState(getXmlFromBinary(data, sizeInBytes));
-    if (xmlState && xmlState->hasTagName(apvts.state.getType()))
-        apvts.replaceState(juce::ValueTree::fromXml(*xmlState));
+    SharedProcessorUtils::loadState(*this, apvts, data, sizeInBytes);
 }
 
 juce::AudioProcessorEditor* ThroughTheWallAudioProcessor::createEditor()

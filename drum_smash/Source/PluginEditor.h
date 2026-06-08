@@ -23,12 +23,9 @@ private:
     void mouseWheelMove   (const juce::MouseEvent&,
                            const juce::MouseWheelDetails&) override;
 
-    void drawChassis   (juce::Graphics&);
-    void drawScrews    (juce::Graphics&);
-    void drawScanLines (juce::Graphics&, juce::Rectangle<float>, float opacity);
-    void drawPlugin    (juce::Graphics&);
-    void drawKnob      (juce::Graphics&, float cx, float cy, float norm,
-                        const juce::String& label, const juce::String& val);
+    void drawPlugin (juce::Graphics&);
+    void drawKnob   (juce::Graphics&, float cx, float cy, float norm,
+                     const juce::String& label, const juce::String& val);
 
     juce::Point<float> knobCenter  (int idx) const;
     int                knobHitTest (juce::Point<float>) const;

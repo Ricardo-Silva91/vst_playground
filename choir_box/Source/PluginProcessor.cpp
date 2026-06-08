@@ -1,5 +1,6 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "SharedProcessorUtils.h"
 #include <cmath>
 
 // ── Parameter IDs ─────────────────────────────────────────────────────────────
@@ -352,23 +353,17 @@ void ChoirBoxProcessor::applyPreset (int index)
     currentPreset = index;
     const auto& p = kPresets[index];
 
-    auto set = [&](const juce::String& id, float val)
-    {
-        auto* param = apvts.getParameter (id);
-        if (param) param->setValueNotifyingHost (param->convertTo0to1 (val));
-    };
-
-    set (kUpSemitones,   p.upSemitones);
-    set (kDownSemitones, p.downSemitones);
-    set (kVoices,        p.voices);
-    set (kDetune,        p.detune);
-    set (kDryLevel,      p.dryLevel);
-    set (kUpLevel,       p.upLevel);
-    set (kDownLevel,     p.downLevel);
-    set (kSaturation,    p.saturation);
-    set (kCrush,         p.crush);
-    set (kDistMix,       p.distMix);
-    set (kMasterOut,     p.masterOut);
+    SharedProcessorUtils::applyParam (apvts, kUpSemitones,   p.upSemitones);
+    SharedProcessorUtils::applyParam (apvts, kDownSemitones, p.downSemitones);
+    SharedProcessorUtils::applyParam (apvts, kVoices,        p.voices);
+    SharedProcessorUtils::applyParam (apvts, kDetune,        p.detune);
+    SharedProcessorUtils::applyParam (apvts, kDryLevel,      p.dryLevel);
+    SharedProcessorUtils::applyParam (apvts, kUpLevel,       p.upLevel);
+    SharedProcessorUtils::applyParam (apvts, kDownLevel,     p.downLevel);
+    SharedProcessorUtils::applyParam (apvts, kSaturation,    p.saturation);
+    SharedProcessorUtils::applyParam (apvts, kCrush,         p.crush);
+    SharedProcessorUtils::applyParam (apvts, kDistMix,       p.distMix);
+    SharedProcessorUtils::applyParam (apvts, kMasterOut,     p.masterOut);
 }
 
 void ChoirBoxProcessor::setCurrentProgram (int index) { applyPreset (index); }
@@ -381,20 +376,12 @@ const juce::String ChoirBoxProcessor::getProgramName (int index)
 
 void ChoirBoxProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
-    auto state = apvts.copyState();
-    std::unique_ptr<juce::XmlElement> xml (state.createXml());
-    xml->setAttribute ("currentPreset", currentPreset);
-    copyXmlToBinary (*xml, destData);
+    SharedProcessorUtils::saveState (*this, apvts, destData, currentPreset);
 }
 
 void ChoirBoxProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
-    std::unique_ptr<juce::XmlElement> xml (getXmlFromBinary (data, sizeInBytes));
-    if (xml != nullptr && xml->hasTagName (apvts.state.getType()))
-    {
-        apvts.replaceState (juce::ValueTree::fromXml (*xml));
-        currentPreset = xml->getIntAttribute ("currentPreset", 0);
-    }
+    SharedProcessorUtils::loadState (*this, apvts, data, sizeInBytes, &currentPreset);
 }
 
 juce::AudioProcessorEditor* ChoirBoxProcessor::createEditor()
