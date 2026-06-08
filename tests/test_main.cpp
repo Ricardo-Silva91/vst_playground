@@ -5,6 +5,6 @@
 // supply our own main so we can initialise JUCE before any tests run.
 int main(int argc, char* argv[])
 {
-    juce::ScopedJuceInitialiser_NonGUI juceInit;
+    juce::ScopedJuceInitialiser_GUI juceInit;
     return Catch::Session().run(argc, argv);
 }

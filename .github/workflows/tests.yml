@@ -15,7 +15,6 @@ jobs:
         with:
           submodules: recursive
 
-      # JUCE on Linux needs X11/GL/audio headers to compile (runtime display not needed)
       - name: Install JUCE Linux dependencies
         run: |
           sudo apt-get update -qq
@@ -29,7 +28,14 @@ jobs:
             libxcursor-dev \
             libxext-dev \
             libgl1-mesa-dev \
-            libasound2-dev
+            libasound2-dev \
+            xvfb
+
+      # ScopedJuceInitialiser_GUI on Linux tries to connect to a display
+      - name: Start virtual display
+        run: |
+          Xvfb :99 -screen 0 1024x768x24 &
+          echo "DISPLAY=:99" >> $GITHUB_ENV
 
       - name: Configure
         run: cmake -B tests/build -S tests -G Ninja -DCMAKE_BUILD_TYPE=Debug
