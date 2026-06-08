@@ -24,3 +24,8 @@ int                DrumSmashEditor::knobHitTest(juce::Point<float>) const { retu
 float              DrumSmashEditor::getNorm(int) const     { return 0.f; }
 void               DrumSmashEditor::setNorm(int, float)    {}
 juce::String       DrumSmashEditor::getValueText(int) const { return {}; }
+
+juce::AudioProcessorEditor* DrumSmashProcessor::createEditor()
+{
+    return new DrumSmashEditor(*this);
+}

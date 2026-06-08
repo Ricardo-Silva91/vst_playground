@@ -25,3 +25,8 @@ float              PitchWobbleEditor::normRate()   const { return 0.f; }
 float              PitchWobbleEditor::normSmooth() const { return 0.f; }
 void               PitchWobbleEditor::setNorm(int, float) {}
 juce::String       PitchWobbleEditor::formatValue(int) const { return {}; }
+
+juce::AudioProcessorEditor* PitchWobbleProcessor::createEditor()
+{
+    return new PitchWobbleEditor(*this);
+}
