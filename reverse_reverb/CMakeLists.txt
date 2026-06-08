@@ -1,5 +1,7 @@
-cmake_minimum_required(VERSION 3.22)
+cmake_minimum_required(VERSION 3.15)
 project(reverse_reverb VERSION 1.0.0)
+
+set(CMAKE_CXX_STANDARD 17)
 
 # JUCE lives at repo root, one level up from this plugin folder
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../JUCE JUCE_build)
@@ -14,18 +16,21 @@ juce_add_binary_data(ReverseReverbFonts
 )
 
 juce_add_plugin(reverse_reverb
-    COMPANY_NAME         "YourName"
+    COMPANY_NAME         "lizard vst"
     IS_SYNTH             FALSE
     NEEDS_MIDI_INPUT     FALSE
     NEEDS_MIDI_OUTPUT    FALSE
     IS_MIDI_EFFECT       FALSE
     EDITOR_WANTS_KEYBOARD_FOCUS FALSE
     COPY_PLUGIN_AFTER_BUILD FALSE
-    PLUGIN_MANUFACTURER_CODE Manu
+    PLUGIN_MANUFACTURER_CODE LvsT
     PLUGIN_CODE Rev1
     FORMATS              VST3
     PRODUCT_NAME         "Reverse Reverb"
+    VST3_CATEGORIES      "Fx"
 )
+
+juce_generate_juce_header(reverse_reverb)
 
 target_sources(reverse_reverb
     PRIVATE
@@ -33,6 +38,12 @@ target_sources(reverse_reverb
         Source/PluginProcessor.h
         Source/PluginEditor.cpp
         Source/PluginEditor.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/../shared/SharedEditorUtils.cpp
+)
+
+target_include_directories(reverse_reverb
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../shared
 )
 
 target_link_libraries(reverse_reverb

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.22)
+cmake_minimum_required(VERSION 3.15)
 project(through_the_wall VERSION 1.0.0)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -13,11 +13,11 @@ juce_add_binary_data(ThroughTheWallData
 )
 
 juce_add_plugin(through_the_wall
-    PLUGIN_MANUFACTURER_CODE Anth
+    PLUGIN_MANUFACTURER_CODE LvsT
     PLUGIN_CODE TtWl
     FORMATS VST3
     PRODUCT_NAME "Through The Wall"
-    COMPANY_NAME "vst_playground"
+    COMPANY_NAME "lizard vst"
     IS_SYNTH FALSE
     NEEDS_MIDI_INPUT FALSE
     NEEDS_MIDI_OUTPUT FALSE
@@ -27,12 +27,20 @@ juce_add_plugin(through_the_wall
     VST3_CATEGORIES "Fx" "Spatial"
 )
 
+juce_generate_juce_header(through_the_wall)
+
 target_sources(through_the_wall
     PRIVATE
         Source/PluginProcessor.cpp
         Source/PluginProcessor.h
         Source/PluginEditor.cpp
         Source/PluginEditor.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/../shared/SharedEditorUtils.cpp
+)
+
+target_include_directories(through_the_wall
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../shared
 )
 
 target_link_libraries(through_the_wall

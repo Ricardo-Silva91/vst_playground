@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.22)
+cmake_minimum_required(VERSION 3.15)
 project(pitch_wobble VERSION 1.0.0)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -15,18 +15,21 @@ juce_add_binary_data(PitchWobbleFonts
 )
 
 juce_add_plugin(pitch_wobble
-    COMPANY_NAME         "YourName"
+    COMPANY_NAME         "lizard vst"
     IS_SYNTH             FALSE
     NEEDS_MIDI_INPUT     FALSE
     NEEDS_MIDI_OUTPUT    FALSE
     IS_MIDI_EFFECT       FALSE
     EDITOR_WANTS_KEYBOARD_FOCUS FALSE
     COPY_PLUGIN_AFTER_BUILD FALSE
-    PLUGIN_MANUFACTURER_CODE Mypg
+    PLUGIN_MANUFACTURER_CODE LvsT
     PLUGIN_CODE Pwob
     FORMATS              VST3
     PRODUCT_NAME         "Pitch Wobble"
+    VST3_CATEGORIES      "Fx"
 )
+
+juce_generate_juce_header(pitch_wobble)
 
 target_sources(pitch_wobble
     PRIVATE
@@ -34,6 +37,12 @@ target_sources(pitch_wobble
         Source/PluginProcessor.h
         Source/PluginEditor.cpp
         Source/PluginEditor.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/../shared/SharedEditorUtils.cpp
+)
+
+target_include_directories(pitch_wobble
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../shared
 )
 
 target_link_libraries(pitch_wobble

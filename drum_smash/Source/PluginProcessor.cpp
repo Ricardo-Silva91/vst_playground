@@ -1,5 +1,6 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "SharedProcessorUtils.h"
 
 // ── Parameter IDs ──────────────────────────────────────────────────────────────
 static const juce::String kBitDepth       = "bitDepth";
@@ -94,27 +95,27 @@ void DrumSmashProcessor::applyPreset (int index)
     currentPreset = index;
     const auto& p = kPresets[index];
 
-    apvts.getParameter (kBitDepth)      ->setValueNotifyingHost (apvts.getParameter(kBitDepth)->convertTo0to1 (p.bitDepth));
-    apvts.getParameter (kSampleRateDiv) ->setValueNotifyingHost (apvts.getParameter(kSampleRateDiv)->convertTo0to1 (p.sampleRateDiv));
-    apvts.getParameter (kDrive)         ->setValueNotifyingHost (apvts.getParameter(kDrive)->convertTo0to1 (p.drive));
-    apvts.getParameter (kOutputGain)    ->setValueNotifyingHost (apvts.getParameter(kOutputGain)->convertTo0to1 (p.outputGain));
-    apvts.getParameter (kNoiseAmount)   ->setValueNotifyingHost (apvts.getParameter(kNoiseAmount)->convertTo0to1 (p.noiseAmount));
-    apvts.getParameter (kCrackleRate)   ->setValueNotifyingHost (apvts.getParameter(kCrackleRate)->convertTo0to1 (p.crackleRate));
-    apvts.getParameter (kLpfCutoff)     ->setValueNotifyingHost (apvts.getParameter(kLpfCutoff)->convertTo0to1 (p.lpfCutoff));
-    apvts.getParameter (kHpfCutoff)     ->setValueNotifyingHost (apvts.getParameter(kHpfCutoff)->convertTo0to1 (p.hpfCutoff));
-    apvts.getParameter (kCompThreshold) ->setValueNotifyingHost (apvts.getParameter(kCompThreshold)->convertTo0to1 (p.compThresholdDb));
-    apvts.getParameter (kCompRatio)     ->setValueNotifyingHost (apvts.getParameter(kCompRatio)->convertTo0to1 (p.compRatio));
-    apvts.getParameter (kCompAttack)    ->setValueNotifyingHost (apvts.getParameter(kCompAttack)->convertTo0to1 (p.compAttackMs));
-    apvts.getParameter (kCompRelease)   ->setValueNotifyingHost (apvts.getParameter(kCompRelease)->convertTo0to1 (p.compReleaseMs));
-    apvts.getParameter (kCompMakeup)    ->setValueNotifyingHost (apvts.getParameter(kCompMakeup)->convertTo0to1 (p.compMakeupDb));
-    apvts.getParameter (kReverbRoom)    ->setValueNotifyingHost (apvts.getParameter(kReverbRoom)->convertTo0to1 (p.reverbRoomSize));
-    apvts.getParameter (kReverbWet)     ->setValueNotifyingHost (apvts.getParameter(kReverbWet)->convertTo0to1 (p.reverbWet));
-    apvts.getParameter (kReverbDamping) ->setValueNotifyingHost (apvts.getParameter(kReverbDamping)->convertTo0to1 (p.reverbDamping));
-    apvts.getParameter (kPitchSemitones)->setValueNotifyingHost (apvts.getParameter(kPitchSemitones)->convertTo0to1 (p.pitchSemitones));
-    apvts.getParameter (kWowRate)       ->setValueNotifyingHost (apvts.getParameter(kWowRate)->convertTo0to1 (p.wowFlutterRate));
-    apvts.getParameter (kWowDepth)      ->setValueNotifyingHost (apvts.getParameter(kWowDepth)->convertTo0to1 (p.wowFlutterDepth));
-    apvts.getParameter (kStereoWidth)   ->setValueNotifyingHost (apvts.getParameter(kStereoWidth)->convertTo0to1 (p.stereoWidth));
-    apvts.getParameter (kTransientBoost)->setValueNotifyingHost (apvts.getParameter(kTransientBoost)->convertTo0to1 (p.transientBoost));
+    SharedProcessorUtils::applyParam (apvts, kBitDepth,       p.bitDepth);
+    SharedProcessorUtils::applyParam (apvts, kSampleRateDiv,  p.sampleRateDiv);
+    SharedProcessorUtils::applyParam (apvts, kDrive,          p.drive);
+    SharedProcessorUtils::applyParam (apvts, kOutputGain,     p.outputGain);
+    SharedProcessorUtils::applyParam (apvts, kNoiseAmount,    p.noiseAmount);
+    SharedProcessorUtils::applyParam (apvts, kCrackleRate,    p.crackleRate);
+    SharedProcessorUtils::applyParam (apvts, kLpfCutoff,      p.lpfCutoff);
+    SharedProcessorUtils::applyParam (apvts, kHpfCutoff,      p.hpfCutoff);
+    SharedProcessorUtils::applyParam (apvts, kCompThreshold,  p.compThresholdDb);
+    SharedProcessorUtils::applyParam (apvts, kCompRatio,      p.compRatio);
+    SharedProcessorUtils::applyParam (apvts, kCompAttack,     p.compAttackMs);
+    SharedProcessorUtils::applyParam (apvts, kCompRelease,    p.compReleaseMs);
+    SharedProcessorUtils::applyParam (apvts, kCompMakeup,     p.compMakeupDb);
+    SharedProcessorUtils::applyParam (apvts, kReverbRoom,     p.reverbRoomSize);
+    SharedProcessorUtils::applyParam (apvts, kReverbWet,      p.reverbWet);
+    SharedProcessorUtils::applyParam (apvts, kReverbDamping,  p.reverbDamping);
+    SharedProcessorUtils::applyParam (apvts, kPitchSemitones, p.pitchSemitones);
+    SharedProcessorUtils::applyParam (apvts, kWowRate,        p.wowFlutterRate);
+    SharedProcessorUtils::applyParam (apvts, kWowDepth,       p.wowFlutterDepth);
+    SharedProcessorUtils::applyParam (apvts, kStereoWidth,    p.stereoWidth);
+    SharedProcessorUtils::applyParam (apvts, kTransientBoost, p.transientBoost);
 
     rebuildDSP();
 }
@@ -350,20 +351,12 @@ void DrumSmashProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 // ── State ─────────────────────────────────────────────────────────────────────
 void DrumSmashProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
-    auto state = apvts.copyState();
-    std::unique_ptr<juce::XmlElement> xml (state.createXml());
-    xml->setAttribute ("currentPreset", currentPreset);
-    copyXmlToBinary (*xml, destData);
+    SharedProcessorUtils::saveState (*this, apvts, destData, currentPreset);
 }
 
 void DrumSmashProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
-    std::unique_ptr<juce::XmlElement> xml (getXmlFromBinary (data, sizeInBytes));
-    if (xml != nullptr && xml->hasTagName (apvts.state.getType()))
-    {
-        apvts.replaceState (juce::ValueTree::fromXml (*xml));
-        currentPreset = xml->getIntAttribute ("currentPreset", 0);
-    }
+    SharedProcessorUtils::loadState (*this, apvts, data, sizeInBytes, &currentPreset);
 }
 
 // ── Factory ───────────────────────────────────────────────────────────────────

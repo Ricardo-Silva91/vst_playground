@@ -1,5 +1,6 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "SharedProcessorUtils.h"
 
 //==============================================================================
 // Preset table
@@ -73,17 +74,9 @@ void PitchWobbleProcessor::setCurrentProgram (int index)
     currentProgram = index;
 
     const auto& p = presets[(size_t)index];
-
-    auto setParam = [&](const juce::String& id, float value)
-    {
-        if (auto* param = dynamic_cast<juce::RangedAudioParameter*>
-                              (apvts.getParameter (id)))
-            param->setValueNotifyingHost (param->convertTo0to1 (value));
-    };
-
-    setParam ("depth",  p.depth);
-    setParam ("rate",   p.rate);
-    setParam ("smooth", p.smoothness);
+    SharedProcessorUtils::applyParam (apvts, "depth",  p.depth);
+    SharedProcessorUtils::applyParam (apvts, "rate",   p.rate);
+    SharedProcessorUtils::applyParam (apvts, "smooth", p.smoothness);
 }
 
 const juce::String PitchWobbleProcessor::getProgramName (int index)
@@ -181,16 +174,12 @@ void PitchWobbleProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 //==============================================================================
 void PitchWobbleProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
-    auto state = apvts.copyState();
-    std::unique_ptr<juce::XmlElement> xml (state.createXml());
-    copyXmlToBinary (*xml, destData);
+    SharedProcessorUtils::saveState (*this, apvts, destData);
 }
 
 void PitchWobbleProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
-    std::unique_ptr<juce::XmlElement> xmlState (getXmlFromBinary (data, sizeInBytes));
-    if (xmlState && xmlState->hasTagName (apvts.state.getType()))
-        apvts.replaceState (juce::ValueTree::fromXml (*xmlState));
+    SharedProcessorUtils::loadState (*this, apvts, data, sizeInBytes);
 }
 
 //==============================================================================

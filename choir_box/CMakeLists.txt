@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(ChoirBox VERSION 1.0.0)
+project(choir_box VERSION 1.0.0)
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -12,12 +12,12 @@ juce_add_binary_data(ChoirBoxData
         ${CMAKE_CURRENT_SOURCE_DIR}/logo_transparent.svg
 )
 
-juce_add_plugin(ChoirBox
-    PLUGIN_MANUFACTURER_CODE Manu
+juce_add_plugin(choir_box
+    PLUGIN_MANUFACTURER_CODE LvsT
     PLUGIN_CODE ChBx
     FORMATS              VST3
     PRODUCT_NAME         "Choir Box"
-    COMPANY_NAME         "YourName"
+    COMPANY_NAME         "lizard vst"
     IS_SYNTH             FALSE
     NEEDS_MIDI_INPUT     FALSE
     NEEDS_MIDI_OUTPUT    FALSE
@@ -26,20 +26,26 @@ juce_add_plugin(ChoirBox
     VST3_CATEGORIES      "Fx"
 )
 
-juce_generate_juce_header(ChoirBox)
+juce_generate_juce_header(choir_box)
 
-target_sources(ChoirBox PRIVATE
+target_sources(choir_box PRIVATE
     Source/PluginProcessor.cpp
     Source/PluginEditor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../shared/SharedEditorUtils.cpp
 )
 
-target_compile_definitions(ChoirBox PUBLIC
+target_include_directories(choir_box
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../shared
+)
+
+target_compile_definitions(choir_box PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0
     JUCE_VST3_CAN_REPLACE_VST2=0
 )
 
-target_link_libraries(ChoirBox
+target_link_libraries(choir_box
     PRIVATE
         ChoirBoxData
         juce::juce_audio_utils

@@ -21,7 +21,6 @@ private:
     juce::Font  shareTechMono;
     std::unique_ptr<juce::Drawable> logoDrawable;
 
-    // Cached norm values for dirty-check repaints
     float thicknessVal = 0.0f;
     float bleedVal     = 0.0f;
     float rattleVal    = 0.0f;
@@ -36,12 +35,9 @@ private:
     void mouseUp         (const juce::MouseEvent&) override;
     void mouseDoubleClick(const juce::MouseEvent&) override;
 
-    void drawChassis  (juce::Graphics&);
-    void drawScrews   (juce::Graphics&);
-    void drawPlugin   (juce::Graphics&);
-    void drawKnob     (juce::Graphics&, float cx, float cy, float value,
-                       const juce::String& label, const juce::String& valueText);
-    void drawScanLines(juce::Graphics&, juce::Rectangle<float> area, float opacity);
+    void drawPlugin(juce::Graphics&);
+    void drawKnob  (juce::Graphics&, float cx, float cy, float value,
+                    const juce::String& label, const juce::String& valueText);
 
     juce::Point<float> knobCenter (int index) const;
     int                knobHitTest(juce::Point<float>) const;

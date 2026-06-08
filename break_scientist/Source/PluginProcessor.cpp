@@ -1,5 +1,6 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "SharedProcessorUtils.h"
 #include <cmath>
 #include <algorithm>
 
@@ -336,18 +337,12 @@ void BreakScientistProcessor::applyPreset (int index)
     currentPreset = index;
     const auto& p = kPresets[index];
 
-    apvts.getParameter (kSwing)->setValueNotifyingHost (
-        apvts.getParameter (kSwing)->convertTo0to1 (p.swing));
-    apvts.getParameter (kHumanize)->setValueNotifyingHost (
-        apvts.getParameter (kHumanize)->convertTo0to1 (p.humanize));
-    apvts.getParameter (kDrag)->setValueNotifyingHost (
-        apvts.getParameter (kDrag)->convertTo0to1 (p.drag));
-    apvts.getParameter (kSensitivity)->setValueNotifyingHost (
-        apvts.getParameter (kSensitivity)->convertTo0to1 (p.sensitivity));
-    apvts.getParameter (kVelocityVar)->setValueNotifyingHost (
-        apvts.getParameter (kVelocityVar)->convertTo0to1 (p.velocityVar));
-    apvts.getParameter (kWetMix)->setValueNotifyingHost (
-        apvts.getParameter (kWetMix)->convertTo0to1 (p.wetMix));
+    SharedProcessorUtils::applyParam (apvts, kSwing,       p.swing);
+    SharedProcessorUtils::applyParam (apvts, kHumanize,    p.humanize);
+    SharedProcessorUtils::applyParam (apvts, kDrag,        p.drag);
+    SharedProcessorUtils::applyParam (apvts, kSensitivity, p.sensitivity);
+    SharedProcessorUtils::applyParam (apvts, kVelocityVar, p.velocityVar);
+    SharedProcessorUtils::applyParam (apvts, kWetMix,      p.wetMix);
 }
 
 void BreakScientistProcessor::setCurrentProgram (int index) { applyPreset (index); }
@@ -361,20 +356,12 @@ const juce::String BreakScientistProcessor::getProgramName (int index)
 // ── State save/load ───────────────────────────────────────────────────────────
 void BreakScientistProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
-    auto state = apvts.copyState();
-    std::unique_ptr<juce::XmlElement> xml (state.createXml());
-    xml->setAttribute ("currentPreset", currentPreset);
-    copyXmlToBinary (*xml, destData);
+    SharedProcessorUtils::saveState (*this, apvts, destData, currentPreset);
 }
 
 void BreakScientistProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
-    std::unique_ptr<juce::XmlElement> xml (getXmlFromBinary (data, sizeInBytes));
-    if (xml != nullptr && xml->hasTagName (apvts.state.getType()))
-    {
-        apvts.replaceState (juce::ValueTree::fromXml (*xml));
-        currentPreset = xml->getIntAttribute ("currentPreset", 0);
-    }
+    SharedProcessorUtils::loadState (*this, apvts, data, sizeInBytes, &currentPreset);
 }
 
 // ── Editor factory ────────────────────────────────────────────────────────────

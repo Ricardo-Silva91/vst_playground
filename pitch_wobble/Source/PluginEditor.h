@@ -2,6 +2,7 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "PluginProcessor.h"
+#include "SharedEditorUtils.h"
 
 class PitchWobbleEditor : public juce::AudioProcessorEditor,
                           private juce::Timer
@@ -26,7 +27,6 @@ private:
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>
         attachDepth, attachRate, attachSmooth;
 
-    // Cached normalised values for dirty-check in timer
     float cachedDepth  = -1.0f;
     float cachedRate   = -1.0f;
     float cachedSmooth = -1.0f;
@@ -40,19 +40,13 @@ private:
     void mouseUp          (const juce::MouseEvent&) override;
     void mouseDoubleClick (const juce::MouseEvent&) override;
 
-    // Drawing
-    void drawChassis   (juce::Graphics&);
-    void drawScrews    (juce::Graphics&);
-    void drawPlugin    (juce::Graphics&);
-    void drawScanLines (juce::Graphics&, juce::Rectangle<float>, float opacity);
-    void drawKnob      (juce::Graphics&, float cx, float cy, float norm,
-                        const juce::String& label, const juce::String& valueText);
+    void drawPlugin (juce::Graphics&);
+    void drawKnob   (juce::Graphics&, float cx, float cy, float norm,
+                     const juce::String& label, const juce::String& valueText);
 
-    // Layout
     juce::Point<float> knobCenter  (int index) const;
     int                knobHitTest (juce::Point<float>) const;
 
-    // Param helpers
     float normDepth()  const;
     float normRate()   const;
     float normSmooth() const;

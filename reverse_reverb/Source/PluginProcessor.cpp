@@ -1,16 +1,30 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "SharedProcessorUtils.h"
+
+juce::AudioProcessorValueTreeState::ParameterLayout
+ReverseReverbAudioProcessor::createParameterLayout()
+{
+    std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "roomSize", "Room Size",
+        juce::NormalisableRange<float>(0.1f, 1.0f, 0.001f), 0.8f));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "wetMix", "Wet Mix",
+        juce::NormalisableRange<float>(0.0f, 1.0f, 0.001f), 0.8f));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "windowMs", "Window (ms)",
+        juce::NormalisableRange<float>(100.f, 2000.f, 1.0f), 500.f));
+    return { params.begin(), params.end() };
+}
 
 //==============================================================================
 ReverseReverbAudioProcessor::ReverseReverbAudioProcessor()
     : AudioProcessor(BusesProperties()
                      .withInput ("Input",  juce::AudioChannelSet::stereo(), true)
-                     .withOutput("Output", juce::AudioChannelSet::stereo(), true))
+                     .withOutput("Output", juce::AudioChannelSet::stereo(), true)),
+      apvts(*this, nullptr, "Parameters", createParameterLayout())
 {
-    // Plain string IDs (no version hints) for reliable FL Studio automation mapping
-    addParameter(roomSize     = new juce::AudioParameterFloat("roomSize",  "Room Size",  0.1f, 1.0f, 0.8f));
-    addParameter(wetMix       = new juce::AudioParameterFloat("wetMix",    "Wet Mix",    0.0f, 1.0f, 0.8f));
-    addParameter(windowSizeMs = new juce::AudioParameterFloat("windowMs",  "Window (ms)", 100.f, 2000.f, 500.f));
 }
 
 ReverseReverbAudioProcessor::~ReverseReverbAudioProcessor() {}
@@ -20,7 +34,8 @@ void ReverseReverbAudioProcessor::prepareToPlay(double sampleRate, int samplesPe
 {
     currentSampleRate = sampleRate;
 
-    windowSizeSamples = static_cast<int>((windowSizeMs->get() / 1000.0f) * sampleRate);
+    windowSizeSamples = static_cast<int>(
+        (*apvts.getRawParameterValue("windowMs") / 1000.0f) * sampleRate);
 
     int channels = getTotalNumInputChannels();
 
@@ -36,14 +51,16 @@ void ReverseReverbAudioProcessor::prepareToPlay(double sampleRate, int samplesPe
     playbackReadPos = 0;
     isPlayingBack   = false;
 
-    reverbParams.roomSize = roomSize->get();
+    reverbParams.roomSize = *apvts.getRawParameterValue("roomSize");
     reverbParams.wetLevel = 1.0f;
     reverbParams.dryLevel = 0.0f;
     reverbParams.damping  = 0.5f;
     reverbParams.width    = 1.0f;
     reverb.setParameters(reverbParams);
-    reverb.setSampleRate(sampleRate); // use setSampleRate, not prepare(spec)
+    reverb.setSampleRate(sampleRate);
     reverb.reset();
+
+    juce::ignoreUnused(samplesPerBlock);
 }
 
 void ReverseReverbAudioProcessor::releaseResources()
@@ -61,28 +78,22 @@ void ReverseReverbAudioProcessor::processWindow()
     for (int ch = 0; ch < channels; ++ch)
         reverbBuffer.copyFrom(ch, 0, captureBuffer, ch, 0, windowSizeSamples);
 
-    reverbParams.roomSize = roomSize->get();
+    reverbParams.roomSize = *apvts.getRawParameterValue("roomSize");
     reverbParams.wetLevel = 1.0f;
     reverbParams.dryLevel = 0.0f;
     reverb.setParameters(reverbParams);
     reverb.reset();
 
     if (channels == 2)
-    {
-        reverb.processStereo(reverbBuffer.getWritePointer(0),
-                             reverbBuffer.getWritePointer(1),
+        reverb.processStereo(reverbBuffer.getWritePointer(0), reverbBuffer.getWritePointer(1),
                              windowSizeSamples);
-    }
     else
-    {
         reverb.processMono(reverbBuffer.getWritePointer(0), windowSizeSamples);
-    }
 
     for (int ch = 0; ch < channels; ++ch)
     {
         float*       reverbData = reverbBuffer.getWritePointer(ch);
         const float* dryData    = captureBuffer.getReadPointer(ch);
-
         for (int i = 0; i < windowSizeSamples; ++i)
             reverbData[i] -= dryData[i];
     }
@@ -91,7 +102,6 @@ void ReverseReverbAudioProcessor::processWindow()
     {
         const float* reverbData   = reverbBuffer.getReadPointer(ch);
         float*       playbackData = playbackBuffer.getWritePointer(ch);
-
         for (int i = 0; i < windowSizeSamples; ++i)
             playbackData[i] = reverbData[windowSizeSamples - 1 - i];
     }
@@ -102,17 +112,18 @@ void ReverseReverbAudioProcessor::processWindow()
 
 //==============================================================================
 void ReverseReverbAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
-                                                juce::MidiBuffer& midiMessages)
+                                                juce::MidiBuffer&)
 {
     juce::ScopedNoDenormals noDenormals;
 
     int numSamples = buffer.getNumSamples();
     int channels   = juce::jmin(buffer.getNumChannels(), captureBuffer.getNumChannels());
 
-    float wet = wetMix->get();
+    float wet = *apvts.getRawParameterValue("wetMix");
     float dry = 1.0f - wet;
 
-    int newWindowSize = static_cast<int>((windowSizeMs->get() / 1000.0f) * currentSampleRate);
+    int newWindowSize = static_cast<int>(
+        (*apvts.getRawParameterValue("windowMs") / 1000.0f) * currentSampleRate);
     if (newWindowSize != windowSizeSamples)
     {
         windowSizeSamples = newWindowSize;
@@ -129,7 +140,6 @@ void ReverseReverbAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
         for (int ch = 0; ch < channels; ++ch)
         {
             float inputSample = buffer.getSample(ch, sample);
-
             captureBuffer.setSample(ch, captureWritePos, inputSample);
 
             float reversedSample = 0.0f;
@@ -151,21 +161,14 @@ void ReverseReverbAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 }
 
 //==============================================================================
-// Presets
-//==============================================================================
 void ReverseReverbAudioProcessor::applyPreset(int index)
 {
     if (index < 0 || index >= kNumPresets) return;
     currentPreset = index;
     const auto& p = kPresets[index];
-
-    auto set = [](juce::AudioParameterFloat* param, float value) {
-        param->setValueNotifyingHost(param->convertTo0to1(value));
-    };
-
-    set(roomSize,     p.roomSize);
-    set(wetMix,       p.wetMix);
-    set(windowSizeMs, p.windowMs);
+    SharedProcessorUtils::applyParam(apvts, "roomSize", p.roomSize);
+    SharedProcessorUtils::applyParam(apvts, "wetMix",   p.wetMix);
+    SharedProcessorUtils::applyParam(apvts, "windowMs", p.windowMs);
 }
 
 const juce::String ReverseReverbAudioProcessor::getProgramName(int index)
@@ -183,20 +186,12 @@ juce::AudioProcessorEditor* ReverseReverbAudioProcessor::createEditor()
 
 void ReverseReverbAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
 {
-    juce::MemoryOutputStream stream(destData, true);
-    stream.writeFloat(roomSize->get());
-    stream.writeFloat(wetMix->get());
-    stream.writeFloat(windowSizeMs->get());
-    stream.writeInt(currentPreset);
+    SharedProcessorUtils::saveState(*this, apvts, destData);
 }
 
 void ReverseReverbAudioProcessor::setStateInformation(const void* data, int sizeInBytes)
 {
-    juce::MemoryInputStream stream(data, static_cast<size_t>(sizeInBytes), false);
-    *roomSize     = stream.readFloat();
-    *wetMix       = stream.readFloat();
-    *windowSizeMs = stream.readFloat();
-    currentPreset = stream.readInt();
+    SharedProcessorUtils::loadState(*this, apvts, data, sizeInBytes);
 }
 
 //==============================================================================
