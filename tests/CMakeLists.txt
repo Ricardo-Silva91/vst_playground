@@ -35,28 +35,19 @@ set(JUCE_TEST_DEFS
 #   add_plugin_test(
 #       <target-name>           e.g. reverse_reverb_test
 #       <plugin-dir>            e.g. reverse_reverb
-#       <binary-data-target>    e.g. ReverseReverbTestData
 #       [EXTRA_DEFS def1 def2 ...]
 #   )
 #
-function(add_plugin_test TARGET PLUGIN_DIR BINARY_TARGET)
+function(add_plugin_test TARGET PLUGIN_DIR)
     cmake_parse_arguments(APT "" "" "EXTRA_DEFS" ${ARGN})
 
     set(PLUGIN_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../${PLUGIN_DIR}")
-
-    juce_add_binary_data(${BINARY_TARGET}
-        SOURCES
-            "${PLUGIN_PATH}/fonts/Rajdhani-Bold.ttf"
-            "${PLUGIN_PATH}/fonts/ShareTechMono-Regular.ttf"
-            "${PLUGIN_PATH}/logo_transparent.svg"
-    )
 
     add_executable(${TARGET}
         "${CMAKE_CURRENT_SOURCE_DIR}/test_main.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/${TARGET}.cpp"
         "${PLUGIN_PATH}/Source/PluginProcessor.cpp"
-        "${PLUGIN_PATH}/Source/PluginEditor.cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/../shared/SharedEditorUtils.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/stubs/${PLUGIN_DIR}_editor_stub.cpp"
     )
 
     target_include_directories(${TARGET}
@@ -74,7 +65,6 @@ function(add_plugin_test TARGET PLUGIN_DIR BINARY_TARGET)
 
     target_link_libraries(${TARGET}
         PRIVATE
-            ${BINARY_TARGET}
             juce::juce_audio_utils
             juce::juce_dsp
             Catch2::Catch2
@@ -87,12 +77,12 @@ function(add_plugin_test TARGET PLUGIN_DIR BINARY_TARGET)
 endfunction()
 
 # ── Plugin test targets ────────────────────────────────────────────────────────
-add_plugin_test(reverse_reverb_test   reverse_reverb   ReverseReverbTestData)
-add_plugin_test(pitch_wobble_test     pitch_wobble     PitchWobbleTestData)
-add_plugin_test(drum_smash_test       drum_smash       DrumSmashTestData)
-add_plugin_test(break_scientist_test  break_scientist  BreakScientistTestData)
-add_plugin_test(choir_box_test        choir_box        ChoirBoxTestData)
-add_plugin_test(through_the_wall_test through_the_wall ThroughTheWallTestData)
+add_plugin_test(reverse_reverb_test   reverse_reverb)
+add_plugin_test(pitch_wobble_test     pitch_wobble)
+add_plugin_test(drum_smash_test       drum_smash)
+add_plugin_test(break_scientist_test  break_scientist)
+add_plugin_test(choir_box_test        choir_box)
+add_plugin_test(through_the_wall_test through_the_wall)
 
 # through_the_wall uses JucePlugin_Name macro (normally set by juce_add_plugin).
 # Define it separately to avoid CMake quoting issues with spaces in the value.
