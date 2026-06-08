@@ -103,8 +103,9 @@ TEST_CASE("PitchWobble - audio processing", "[pitch_wobble]")
     {
         setParam(proc.apvts, "depth", 0.0f);
 
-        // Prime the circular buffer and let smoothed parameters converge
-        for (int i = 0; i < 50; ++i)
+        // Prime the circular buffer: readPos starts 1 ahead of writePos and reads
+        // zeros until it wraps the full 65536-sample buffer (128 blocks × 512 samples)
+        for (int i = 0; i < 130; ++i)
         {
             juce::AudioBuffer<float> warm(2, 512);
             fillWithSine(warm, 440.f, 44100.0);
@@ -127,8 +128,8 @@ TEST_CASE("PitchWobble - audio processing", "[pitch_wobble]")
         setParam(proc.apvts, "rate",   5.f);
         setParam(proc.apvts, "smooth", 0.1f);
 
-        // Prime so the effect is in steady state
-        for (int i = 0; i < 50; ++i)
+        // Prime so the effect is in steady state (128 blocks to fill the 65536-sample buffer)
+        for (int i = 0; i < 130; ++i)
         {
             juce::AudioBuffer<float> warm(2, 512);
             fillWithSine(warm, 440.f, 44100.0, 0.7f);
