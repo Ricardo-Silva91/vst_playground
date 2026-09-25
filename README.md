@@ -12,6 +12,7 @@ A collection of VST3 plugins built with [JUCE](https://juce.com/) and CMake, com
 | `pitch_wobble` | Applies subtle random pitch deviations for an organic, human feel | Depth (cents), Rate (Hz), Smoothness | [Latest release](https://github.com/Ricardo-Silva91/vst_playground/releases/tag/pitch_wobble-latest) |
 | `through_the_wall` | Simulates sound passing through a wall with LPF, reverb, and comb filtering | Wall Thickness, Room Bleed, Wall Rattle, Distance | [Latest release](https://github.com/Ricardo-Silva91/vst_playground/releases/tag/through_the_wall-latest) |
 | `drum_smash` | Lo-fi drum character processor with saturation, bit crushing, compression and reverb | 21 parameters across 8 sections | [Latest release](https://github.com/Ricardo-Silva91/vst_playground/releases/tag/drum_smash-latest) |
+| `lizard_suite` | Four lo-fi modules in series: Dust (sampler grit) → Chew (tape dropouts) → Murk (dark reverb) → Vinyl (noise bed) | 14 parameters across 4 modules | [Latest release](https://github.com/Ricardo-Silva91/vst_playground/releases/tag/lizard_suite-latest) |
 
 Each release page contains a Mac (`.zip` with `.vst3` bundle) and Windows (`.zip` with `.vst3` folder) download. See [Installing a Built Plugin](#installing-a-built-plugin) below.
 

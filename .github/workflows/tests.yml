@@ -15,6 +15,14 @@ jobs:
         with:
           submodules: recursive
 
+      # JUCE-free DSP cores (e.g. lizard_suite/test) build with plain g++
+      - name: Standalone DSP core tests (no JUCE)
+        run: |
+          for t in */test/test_*.cpp; do
+            echo "── $t"
+            (cd "$(dirname "$t")" && g++ -std=c++17 -O2 -Wall "$(basename "$t")" -o t && ./t)
+          done
+
       - name: Install JUCE Linux dependencies
         run: |
           sudo apt-get update -qq
