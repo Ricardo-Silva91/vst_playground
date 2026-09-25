@@ -83,6 +83,7 @@ add_plugin_test(drum_smash_test       drum_smash)
 add_plugin_test(break_scientist_test  break_scientist)
 add_plugin_test(choir_box_test        choir_box)
 add_plugin_test(through_the_wall_test through_the_wall)
+add_plugin_test(lizard_suite_test     lizard_suite)
 
 # through_the_wall uses JucePlugin_Name macro (normally set by juce_add_plugin).
 # Define it separately to avoid CMake quoting issues with spaces in the value.
