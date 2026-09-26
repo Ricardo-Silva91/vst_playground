@@ -16,6 +16,7 @@ on:
           - drum_smash
           - break_scientist
           - choir_box
+          - lizard_suite
       platforms:
         description: 'Platforms to build'
         required: true
