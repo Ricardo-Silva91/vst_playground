@@ -1,5 +1,6 @@
 #pragma once
 #include <juce_gui_basics/juce_gui_basics.h>
+#include <juce_audio_processors/juce_audio_processors.h>
 
 namespace SharedEditorUtils
 {
@@ -7,6 +8,11 @@ namespace SharedEditorUtils
     juce::Font                      loadRajdhaniBold();
     juce::Font                      loadShareTechMono();
     std::unique_ptr<juce::Drawable> loadLogo();
+
+    // Set a parameter from the UI as one host automation gesture, so DAWs in
+    // touch/latch mode record it. Knob drags call begin/endChangeGesture
+    // themselves around the whole drag.
+    void setParamAsGesture (juce::AudioProcessorParameter* p, float normalisedValue);
 
     // ── Drawing helpers ───────────────────────────────────────────────────────
     void drawScanLines (juce::Graphics& g, juce::Rectangle<float> area, float opacity);

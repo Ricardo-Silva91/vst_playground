@@ -1,6 +1,8 @@
 #include "PluginEditor.h"
 #include "SharedEditorUtils.h"
 
+static constexpr float kKnobR = 28.f;
+
 static const SharedEditorUtils::KnobStyle kKnobStyle {
     juce::Colour (0xff9b59f5),
     juce::Colour (0xff2a1a3a), juce::Colour (0xff150d20), juce::Colour (0xff080508),
@@ -90,7 +92,11 @@ int BreakScientistEditor::knobHitTest (juce::Point<float> pos) const
 void BreakScientistEditor::mouseDown (const juce::MouseEvent& e)
 {
     int k = knobHitTest (e.position);
-    if (k >= 0) { draggingKnob = k; dragStartY = e.position.y; dragStartVal = getNorm (k); }
+    if (k >= 0)
+    {
+        draggingKnob = k; dragStartY = e.position.y; dragStartVal = getNorm (k);
+        if (auto* p = proc.apvts.getParameter (knobInfo (k).paramId)) p->beginChangeGesture();
+    }
 }
 
 void BreakScientistEditor::mouseDrag (const juce::MouseEvent& e)
@@ -102,7 +108,12 @@ void BreakScientistEditor::mouseDrag (const juce::MouseEvent& e)
     repaint();
 }
 
-void BreakScientistEditor::mouseUp (const juce::MouseEvent&) { draggingKnob = -1; }
+void BreakScientistEditor::mouseUp (const juce::MouseEvent&)
+{
+    if (draggingKnob >= 0)
+        if (auto* p = proc.apvts.getParameter (knobInfo (draggingKnob).paramId)) p->endChangeGesture();
+    draggingKnob = -1;
+}
 
 void BreakScientistEditor::mouseDoubleClick (const juce::MouseEvent& e)
 {
@@ -121,8 +132,9 @@ void BreakScientistEditor::mouseDoubleClick (const juce::MouseEvent& e)
     box->enterModalState (true,
         juce::ModalCallbackFunction::create ([box, fp] (int result) {
             if (result == 1)
-                *fp = juce::jlimit (fp->range.start, fp->range.end,
-                                    box->getTextEditorContents ("val").getFloatValue());
+                SharedEditorUtils::setParamAsGesture (fp, fp->convertTo0to1 (
+                    juce::jlimit (fp->range.start, fp->range.end,
+                                  box->getTextEditorContents ("val").getFloatValue())));
         }), true);
 }
 

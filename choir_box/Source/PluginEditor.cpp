@@ -107,7 +107,7 @@ void ChoirBoxEditor::mouseDown (const juce::MouseEvent& e)
     if (e.mods.isRightButtonDown())
     {
         auto* param = proc.apvts.getParameter (kKnobDefs[k].paramId);
-        if (param) param->setValueNotifyingHost (param->getDefaultValue());
+        if (param) SharedEditorUtils::setParamAsGesture (param, param->getDefaultValue());
         repaint();
         return;
     }
@@ -115,6 +115,7 @@ void ChoirBoxEditor::mouseDown (const juce::MouseEvent& e)
     draggingKnob = k;
     dragStartY   = e.position.y;
     dragStartVal = getNorm (k);
+    if (auto* p = proc.apvts.getParameter (kKnobDefs[k].paramId)) p->beginChangeGesture();
 }
 
 void ChoirBoxEditor::mouseDrag (const juce::MouseEvent& e)
@@ -126,7 +127,12 @@ void ChoirBoxEditor::mouseDrag (const juce::MouseEvent& e)
     repaint();
 }
 
-void ChoirBoxEditor::mouseUp (const juce::MouseEvent&) { draggingKnob = -1; }
+void ChoirBoxEditor::mouseUp (const juce::MouseEvent&)
+{
+    if (draggingKnob >= 0)
+        if (auto* p = proc.apvts.getParameter (kKnobDefs[draggingKnob].paramId)) p->endChangeGesture();
+    draggingKnob = -1;
+}
 
 void ChoirBoxEditor::mouseDoubleClick (const juce::MouseEvent& e)
 {
@@ -146,8 +152,9 @@ void ChoirBoxEditor::mouseDoubleClick (const juce::MouseEvent& e)
         juce::ModalCallbackFunction::create ([box, fp](int result)
         {
             if (result == 1)
-                *fp = juce::jlimit (fp->range.start, fp->range.end,
-                                    box->getTextEditorContents ("val").getFloatValue());
+                SharedEditorUtils::setParamAsGesture (fp, fp->convertTo0to1 (
+                    juce::jlimit (fp->range.start, fp->range.end,
+                                  box->getTextEditorContents ("val").getFloatValue())));
         }), true);
 }
 

@@ -71,11 +71,12 @@ void ThroughTheWallAudioProcessor::prepareToPlay(double sampleRate, int samplesP
     smoothedRattle    = apvts.getRawParameterValue("rattle")->load();
     smoothedDistance  = apvts.getRawParameterValue("distance")->load();
 
+    updateFilters();
+    // Size the filter state for the new coefficients here, not on the audio thread
     lowPassL.reset();
     lowPassR.reset();
     lowPass2L.reset();
     lowPass2R.reset();
-    updateFilters();
 }
 
 void ThroughTheWallAudioProcessor::releaseResources() {}

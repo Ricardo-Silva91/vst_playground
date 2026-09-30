@@ -209,6 +209,9 @@ void DrumSmashProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     reverb.setSampleRate (sampleRate);
 
     rebuildDSP();
+    // Size the filter state for the new coefficients here, not on the audio thread
+    hpfFilter.reset();
+    lpfFilter.reset();
 }
 
 void DrumSmashProcessor::releaseResources() {}
