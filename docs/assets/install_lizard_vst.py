@@ -129,8 +129,8 @@ def relaunch_elevated():
         os.execvp("sudo", args)  # replaces current process
     elif SYSTEM == "Windows":
         import ctypes
-        params = f'"{sys.executable}" "{script}"'
-        ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, f'"{script}"', None, 1)
+        params = " ".join(f'"{a}"' for a in [script] + sys.argv[1:])
+        ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, params, None, 1)
         sys.exit(0)
 
 # ── GitHub API ────────────────────────────────────────────────────────────────
@@ -462,6 +462,9 @@ def main():
     if SYSTEM == "Windows":
         print(DIM("  FL Studio: Options → Manage plugins → Find more plugins"))
     print()
+    if SYSTEM == "Windows":
+        # The elevated relaunch runs in its own console, which closes on exit
+        input("  Press Enter to close ...")
 
 if __name__ == "__main__":
     main()

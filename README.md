@@ -12,9 +12,13 @@ A collection of VST3 plugins built with [JUCE](https://juce.com/) and CMake, com
 | `pitch_wobble` | Applies subtle random pitch deviations for an organic, human feel | Depth (cents), Rate (Hz), Smoothness | [Latest release](https://github.com/Ricardo-Silva91/vst_playground/releases/tag/pitch_wobble-latest) |
 | `through_the_wall` | Simulates sound passing through a wall with LPF, reverb, and comb filtering | Wall Thickness, Room Bleed, Wall Rattle, Distance | [Latest release](https://github.com/Ricardo-Silva91/vst_playground/releases/tag/through_the_wall-latest) |
 | `drum_smash` | Lo-fi drum character processor with saturation, bit crushing, compression and reverb | 21 parameters across 8 sections | [Latest release](https://github.com/Ricardo-Silva91/vst_playground/releases/tag/drum_smash-latest) |
+| `break_scientist` | Detects drum hits and displaces them in time (swing, humanize, drag) with velocity variance | 6 parameters | [Latest release](https://github.com/Ricardo-Silva91/vst_playground/releases/tag/break_scientist-latest) |
+| `choir_box` | Phase-vocoder harmonizer: up/down pitch-shifted voices with detune spread, panning and a saturation stage | 11 parameters | [Latest release](https://github.com/Ricardo-Silva91/vst_playground/releases/tag/choir_box-latest) |
 | `lizard_suite` | Four lo-fi modules in series: Dust (sampler grit) → Chew (tape dropouts) → Murk (dark reverb) → Vinyl (noise bed) | 14 parameters across 4 modules | [Latest release](https://github.com/Ricardo-Silva91/vst_playground/releases/tag/lizard_suite-latest) |
 
 Each release page contains a Mac (`.zip` with `.vst3` bundle) and Windows (`.zip` with `.vst3` folder) download. See [Installing a Built Plugin](#installing-a-built-plugin) below.
+
+The project site (plugin pages, install guide and the `install_lizard_vst.py` installer script) lives in [`docs/`](docs/) and is deployed to GitHub Pages by the **Deploy Pages** workflow on every push to `main` that touches `docs/`.
 
 ---
 
@@ -23,19 +27,21 @@ Each release page contains a Mac (`.zip` with `.vst3` bundle) and Windows (`.zip
 ```
 vst_playground/
 ├── JUCE/                        ← JUCE as a git submodule (shared by all plugins)
-├── reverse_reverb/
+├── shared/                      ← editor/processor helpers used by every plugin
+├── <plugin_name>/               ← one folder per plugin (see table above)
 │   ├── Source/
 │   │   ├── PluginProcessor.h/.cpp
-│   │   └── PluginEditor.h/.cpp
+│   │   ├── PluginEditor.h/.cpp
+│   │   └── DSP/                 ← JUCE-free DSP cores (newer plugins)
+│   ├── test/                    ← standalone g++ tests for the DSP cores
 │   └── CMakeLists.txt
-├── pitch_wobble/
-│   ├── Source/
-│   │   ├── PluginProcessor.h/.cpp
-│   │   └── PluginEditor.h/.cpp
-│   └── CMakeLists.txt
+├── tests/                       ← Catch2 tests for every processor
+├── docs/                        ← GitHub Pages site
 └── .github/
     └── workflows/
-        └── build.yml            ← single shared workflow for all plugins
+        ├── build.yml            ← builds + releases a plugin (commit scope or manual)
+        ├── tests.yml            ← runs all tests on push / PR
+        └── pages.yml            ← deploys docs/ to GitHub Pages
 ```
 
 Each plugin is a self-contained folder with its own `CMakeLists.txt`. JUCE lives once at the repo root as a submodule and is referenced by all plugins via a relative path (`../JUCE`).

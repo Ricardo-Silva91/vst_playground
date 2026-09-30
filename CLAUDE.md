@@ -91,6 +91,7 @@ vst_playground/
 │   ├── fonts/
 │   ├── CMakeLists.txt
 │   └── logo_transparent.svg
+├── docs/                   ← GitHub Pages site (deployed by .github/workflows/pages.yml)
 └── .github/workflows/build.yml
 ```
 

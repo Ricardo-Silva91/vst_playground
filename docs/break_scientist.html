@@ -77,7 +77,7 @@
         <span class="chain-node">Output</span>
       </div>
       <p class="chain-note">
-        The plugin uses a lookahead buffer (up to 500ms depending on settings) to detect drum transients before they arrive at the output. Each detected hit is then displaced in time according to the Swing, Humanize, and Drag values, and its amplitude is reshaped by Vel Variance. The lookahead is reported to the host as latency — the host compensates automatically during playback, so timing stays in sync while you audition. <strong>Consolidate or freeze the track before mixing</strong> — the consolidated audio has no latency offset and is the real output. Live monitoring is fine for dialling in the feel.
+        The plugin uses a 2-second lookahead buffer to detect drum transients before they arrive at the output. Each detected hit is then displaced in time according to the Swing, Humanize, and Drag values, and its amplitude is reshaped by Vel Variance. The lookahead is reported to the host as latency — the host compensates automatically during playback, so timing stays in sync while you audition. <strong>Consolidate or freeze the track before mixing</strong> — the consolidated audio has no latency offset and is the real output. Live monitoring is fine for dialling in the feel.
       </p>
     </div>
   </div>

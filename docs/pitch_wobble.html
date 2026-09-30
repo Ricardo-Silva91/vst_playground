@@ -67,7 +67,7 @@
         <span class="chain-node">Output</span>
       </div>
       <p class="chain-note">
-        Pitch shifting works by reading back through a circular buffer at a slightly varying speed — faster than 1&times; raises pitch, slower lowers it. A new random pitch target is picked at the frequency set by <em>Rate</em>. The read head glides toward each target at a speed controlled by <em>Smoothness</em>. Because the speed variation averages out over time, the base pitch is preserved — the source never drifts permanently out of tune.
+        Pitch shifting works by reading back through a circular buffer at a slightly varying speed — faster than 1&times; raises pitch, slower lowers it. A new random pitch target is picked at the frequency set by <em>Rate</em>. The read head glides toward each target at a speed controlled by <em>Smoothness</em>. Because the speed variation averages out over time, the base pitch is preserved — the source never drifts permanently out of tune. The read head trails the input by 200&nbsp;ms, which is reported to the host as latency and compensated automatically.
       </p>
     </div>
     <div class="panel">
