@@ -37,11 +37,14 @@ void ReverseReverbAudioProcessor::prepareToPlay(double sampleRate, int samplesPe
     windowSizeSamples = static_cast<int>(
         (*apvts.getRawParameterValue("windowMs") / 1000.0f) * sampleRate);
 
+    // Allocate for the longest window so processBlock never reallocates
+    const int maxWindowSamples = static_cast<int>(
+        (apvts.getParameterRange("windowMs").end / 1000.0f) * sampleRate);
     int channels = getTotalNumInputChannels();
 
-    captureBuffer .setSize(channels, windowSizeSamples, false, true, false);
-    reverbBuffer  .setSize(channels, windowSizeSamples, false, true, false);
-    playbackBuffer.setSize(channels, windowSizeSamples, false, true, false);
+    captureBuffer .setSize(channels, maxWindowSamples, false, true, false);
+    reverbBuffer  .setSize(channels, maxWindowSamples, false, true, false);
+    playbackBuffer.setSize(channels, maxWindowSamples, false, true, false);
 
     captureBuffer .clear();
     reverbBuffer  .clear();
@@ -92,14 +95,6 @@ void ReverseReverbAudioProcessor::processWindow()
 
     for (int ch = 0; ch < channels; ++ch)
     {
-        float*       reverbData = reverbBuffer.getWritePointer(ch);
-        const float* dryData    = captureBuffer.getReadPointer(ch);
-        for (int i = 0; i < windowSizeSamples; ++i)
-            reverbData[i] -= dryData[i];
-    }
-
-    for (int ch = 0; ch < channels; ++ch)
-    {
         const float* reverbData   = reverbBuffer.getReadPointer(ch);
         float*       playbackData = playbackBuffer.getWritePointer(ch);
         for (int i = 0; i < windowSizeSamples; ++i)
@@ -126,10 +121,7 @@ void ReverseReverbAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
         (*apvts.getRawParameterValue("windowMs") / 1000.0f) * currentSampleRate);
     if (newWindowSize != windowSizeSamples)
     {
-        windowSizeSamples = newWindowSize;
-        captureBuffer .setSize(channels, windowSizeSamples, false, true, true);
-        reverbBuffer  .setSize(channels, windowSizeSamples, false, true, true);
-        playbackBuffer.setSize(channels, windowSizeSamples, false, true, true);
+        windowSizeSamples = juce::jmin(newWindowSize, captureBuffer.getNumSamples());
         captureWritePos = 0;
         playbackReadPos = 0;
         isPlayingBack   = false;

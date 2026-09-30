@@ -40,8 +40,12 @@ jobs:
       build_mac: ${{ steps.parse.outputs.build_mac }}
       build_windows: ${{ steps.parse.outputs.build_windows }}
     steps:
+      - uses: actions/checkout@v4
+
       - name: Parse commit scope or use manual input
         id: parse
+        env:
+          MSG: ${{ github.event.head_commit.message }}
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             VST="${{ github.event.inputs.vst_name }}"
@@ -60,9 +64,10 @@ jobs:
               echo "build_windows=true" >> $GITHUB_OUTPUT
             fi
           else
-            MSG="${{ github.event.head_commit.message }}"
             echo "Commit message: $MSG"
-            if [[ "$MSG" =~ ^[a-zA-Z0-9_]+\(([a-zA-Z0-9_]+)\): ]]; then
+            # Only scopes naming a plugin folder build (skips e.g. "fix(tests):")
+            if [[ "$MSG" =~ ^[a-zA-Z0-9_]+\(([a-zA-Z0-9_]+)\): ]] \
+               && [ -f "${BASH_REMATCH[1]}/Source/PluginProcessor.cpp" ]; then
               VST="${BASH_REMATCH[1]}"
               echo "vst_name=$VST" >> $GITHUB_OUTPUT
               echo "should_build=true" >> $GITHUB_OUTPUT

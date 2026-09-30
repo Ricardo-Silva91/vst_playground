@@ -184,11 +184,12 @@ private:
     int currentPreset = 0;
     double currentSampleRate = 44100.0;
 
-    // DSP objects
-    juce::dsp::ProcessorChain<
-        juce::dsp::IIR::Filter<float>,   // 0 HPF
-        juce::dsp::IIR::Filter<float>    // 1 LPF
-    > filterChain;
+    // DSP objects — the duplicators run one filter per channel with shared
+    // coefficients (a bare IIR::Filter only processes channel 0)
+    using StereoIIR = juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>,
+                                                     juce::dsp::IIR::Coefficients<float>>;
+    StereoIIR hpfFilter, lpfFilter;
+    float lastHpf = -1.f, lastLpf = -1.f;
 
     juce::dsp::Compressor<float> compressor;
     juce::Reverb reverb;
@@ -197,11 +198,20 @@ private:
     float bcPhase = 0.f;
     float bcHeldL = 0.f, bcHeldR = 0.f;
 
-    // Wow/flutter LFO
-    float wowPhase = 0.f;
+    // Pitch shift: two crossfaded read taps sweeping a short delay window
+    std::vector<float> pitchBufL, pitchBufR;
+    int    pitchWritePos = 0;
+    int    pitchWindow   = 0;
+    double pitchPhase    = 0.0;
 
-    // Transient shaper (simple envelope follower)
-    float envFollower = 0.f;
+    // Wow/flutter: LFO-modulated delay (vibrato)
+    static constexpr double kMaxWowDelaySec = 0.025;
+    std::vector<float> wowBufL, wowBufR;
+    int   wowWritePos = 0;
+    float wowPhase    = 0.f;
+
+    // Transient shaper: fast vs slow envelope followers
+    float envFast = 0.f, envSlow = 0.f;
 
     // Noise seed
     juce::Random rng;

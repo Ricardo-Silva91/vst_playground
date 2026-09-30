@@ -73,3 +73,10 @@ static inline float getParam(juce::AudioProcessorValueTreeState& apvts, const ju
 {
     return *apvts.getRawParameterValue(id);
 }
+
+// Get a parameter's declared default as a native value
+static inline float getDefault(juce::AudioProcessorValueTreeState& apvts, const juce::String& id)
+{
+    auto* p = dynamic_cast<juce::RangedAudioParameter*>(apvts.getParameter(id));
+    return p != nullptr ? p->convertFrom0to1(p->getDefaultValue()) : 0.f;
+}

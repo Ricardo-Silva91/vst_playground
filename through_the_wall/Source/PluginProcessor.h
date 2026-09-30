@@ -66,7 +66,7 @@ private:
     juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>, juce::dsp::IIR::Coefficients<float>> lowPass2L, lowPass2R;
 
     // Wall rattle: comb filter via short delay lines
-    static constexpr int kCombDelaySamples = 512;
+    static constexpr int kCombDelaySamples = 2048;   // 8 ms fits up to 192 kHz
     std::array<float, kCombDelaySamples> combBufferL{}, combBufferR{};
     int combWritePos = 0;
 

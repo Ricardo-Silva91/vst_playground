@@ -20,12 +20,12 @@ TEST_CASE("BreakScientist - parameters", "[break_scientist]")
 
     SECTION("default values match spec")
     {
-        REQUIRE(getParam(proc.apvts, "swing")       == Catch::Approx(0.58f).margin(0.001f));
-        REQUIRE(getParam(proc.apvts, "humanize")    == Catch::Approx(0.2f).margin(0.001f));
-        REQUIRE(getParam(proc.apvts, "drag")        == Catch::Approx(0.1f).margin(0.001f));
-        REQUIRE(getParam(proc.apvts, "sensitivity") == Catch::Approx(0.5f).margin(0.001f));
-        REQUIRE(getParam(proc.apvts, "velocityvar") == Catch::Approx(0.3f).margin(0.001f));
-        REQUIRE(getParam(proc.apvts, "wetmix")      == Catch::Approx(1.0f).margin(0.001f));
+        REQUIRE(getDefault(proc.apvts, "swing")       == Catch::Approx(0.58f).margin(0.001f));
+        REQUIRE(getDefault(proc.apvts, "humanize")    == Catch::Approx(0.2f).margin(0.001f));
+        REQUIRE(getDefault(proc.apvts, "drag")        == Catch::Approx(0.1f).margin(0.001f));
+        REQUIRE(getDefault(proc.apvts, "sensitivity") == Catch::Approx(0.5f).margin(0.001f));
+        REQUIRE(getDefault(proc.apvts, "velocityvar") == Catch::Approx(0.3f).margin(0.001f));
+        REQUIRE(getDefault(proc.apvts, "wetmix")      == Catch::Approx(1.0f).margin(0.001f));
     }
 
     SECTION("parameter ranges")
@@ -141,6 +141,67 @@ TEST_CASE("BreakScientist - audio processing", "[break_scientist]")
         REQUIRE(maxOutputRms > burstRms * 0.01f);
     }
 
+    SECTION("drag moves detected hits later and suppresses the originals")
+    {
+        setParam(proc.apvts, "wetmix",      1.0f);
+        setParam(proc.apvts, "drag",        1.0f);   // 200 ms
+        setParam(proc.apvts, "swing",       0.5f);   // straight
+        setParam(proc.apvts, "humanize",    0.0f);
+        setParam(proc.apvts, "velocityvar", 0.0f);
+        setParam(proc.apvts, "sensitivity", 0.5f);
+        proc.prepareToPlay(44100.0, 512);
+
+        const int sr       = 44100;
+        const int latency  = proc.getLatencySamples();
+        const int drag     = (int)(0.200f * (float)sr);
+        const int spacing  = sr / 2;
+        const int total    = 6 * sr;
+        std::vector<float> in((size_t)total, 0.f), out((size_t)total, 0.f);
+
+        // Decaying 200 Hz bursts every 0.5 s
+        std::vector<int> onsets;
+        for (int n = sr / 4; n + spacing < total; n += spacing)
+        {
+            onsets.push_back(n);
+            for (int i = 0; i < spacing / 2; ++i)
+                in[(size_t)(n + i)] = 0.8f * std::exp(-(float)i / (0.03f * (float)sr))
+                                      * std::sin(juce::MathConstants<float>::twoPi * 200.f * (float)i / (float)sr);
+        }
+
+        for (int pos = 0; pos + 512 <= total; pos += 512)
+        {
+            juce::AudioBuffer<float> buf(2, 512);
+            for (int ch = 0; ch < 2; ++ch)
+                for (int i = 0; i < 512; ++i)
+                    buf.setSample(ch, i, in[(size_t)(pos + i)]);
+            proc.processBlock(buf, midi);
+            for (int i = 0; i < 512; ++i)
+                out[(size_t)(pos + i)] = buf.getSample(0, i);
+        }
+
+        auto energy = [&](int from, int len)
+        {
+            double e = 0.0;
+            for (int i = from; i < from + len && i < total; ++i)
+                e += (double)out[(size_t)i] * out[(size_t)i];
+            return e;
+        };
+
+        int checked = 0;
+        for (int n : onsets)
+        {
+            const int orig  = n + latency;
+            const int moved = orig + drag;
+            if (moved + 882 > total) continue;
+            // The hit (not stale ring contents) arrives 200 ms late ...
+            REQUIRE(energy(moved, 882) > 10.0 * energy(orig, 882));
+            // ... with its own shape: output tracks the input burst
+            REQUIRE(out[(size_t)(moved + 100)] == Catch::Approx(in[(size_t)(n + 100)]).margin(0.05f));
+            ++checked;
+        }
+        REQUIRE(checked >= 3);
+    }
+
     SECTION("all extreme parameter combinations do not crash")
     {
         for (auto swing : { 0.50f, 0.85f })
@@ -181,6 +242,21 @@ TEST_CASE("BreakScientist - state management", "[break_scientist]")
         REQUIRE(getParam(proc.apvts, "humanize") == Catch::Approx(0.8f).margin(0.001f));
         REQUIRE(getParam(proc.apvts, "drag")     == Catch::Approx(0.5f).margin(0.001f));
         REQUIRE(getParam(proc.apvts, "wetmix")   == Catch::Approx(0.6f).margin(0.001f));
+    }
+
+    SECTION("prepareToPlay keeps user and restored parameter values")
+    {
+        BreakScientistProcessor proc;
+        setParam(proc.apvts, "humanize", 0.33f);
+        proc.prepareToPlay(44100.0, 512);
+        REQUIRE(getParam(proc.apvts, "humanize") == Catch::Approx(0.33f).margin(0.001f));
+
+        juce::MemoryBlock stateData;
+        proc.getStateInformation(stateData);
+        BreakScientistProcessor restored;
+        restored.setStateInformation(stateData.getData(), (int)stateData.getSize());
+        restored.prepareToPlay(48000.0, 256);
+        REQUIRE(getParam(restored.apvts, "humanize") == Catch::Approx(0.33f).margin(0.001f));
     }
 
     SECTION("prepareToPlay can be called multiple times")

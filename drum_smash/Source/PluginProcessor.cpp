@@ -32,6 +32,9 @@ DrumSmashProcessor::DrumSmashProcessor()
           .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
       apvts (*this, nullptr, "Parameters", createParameterLayout())
 {
+    // Start on the first preset; prepareToPlay must not re-apply it, or it
+    // would overwrite restored session state and the user's own edits.
+    applyPreset (0);
 }
 
 DrumSmashProcessor::~DrumSmashProcessor() {}
@@ -116,8 +119,6 @@ void DrumSmashProcessor::applyPreset (int index)
     SharedProcessorUtils::applyParam (apvts, kWowDepth,       p.wowFlutterDepth);
     SharedProcessorUtils::applyParam (apvts, kStereoWidth,    p.stereoWidth);
     SharedProcessorUtils::applyParam (apvts, kTransientBoost, p.transientBoost);
-
-    rebuildDSP();
 }
 
 void DrumSmashProcessor::setCurrentProgram (int index)
@@ -142,11 +143,18 @@ void DrumSmashProcessor::rebuildDSP()
     lpf = juce::jlimit (200.f, 20000.f, lpf);
     hpf = juce::jlimit (20.f,  2000.f, hpf);
 
-    auto& hpfNode = filterChain.get<0>();
-    auto& lpfNode = filterChain.get<1>();
-
-    *hpfNode.coefficients = *juce::dsp::IIR::Coefficients<float>::makeHighPass (currentSampleRate, hpf, 0.707f);
-    *lpfNode.coefficients = *juce::dsp::IIR::Coefficients<float>::makeLowPass  (currentSampleRate, lpf, 0.707f);
+    // Assigning ArrayCoefficients reuses the existing storage, so this is
+    // allocation-free on the audio thread; skip it when nothing changed
+    if (hpf != lastHpf)
+    {
+        *hpfFilter.state = juce::dsp::IIR::ArrayCoefficients<float>::makeHighPass (currentSampleRate, hpf, 0.707f);
+        lastHpf = hpf;
+    }
+    if (lpf != lastLpf)
+    {
+        *lpfFilter.state = juce::dsp::IIR::ArrayCoefficients<float>::makeLowPass (currentSampleRate, lpf, 0.707f);
+        lastLpf = lpf;
+    }
 
     float attack  = apvts.getRawParameterValue (kCompAttack) ->load();
     float release = apvts.getRawParameterValue (kCompRelease)->load();
@@ -174,20 +182,33 @@ void DrumSmashProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     bcHeldL = 0.f;
     bcHeldR = 0.f;
     wowPhase = 0.f;
-    envFollower = 0.f;
+    envFast = 0.f;
+    envSlow = 0.f;
+
+    pitchWindow   = juce::jmax (4, (int) (0.050 * sampleRate));   // 50 ms grain
+    pitchBufL.assign ((size_t) pitchWindow + 2, 0.f);
+    pitchBufR.assign ((size_t) pitchWindow + 2, 0.f);
+    pitchWritePos = 0;
+    pitchPhase    = 0.0;
+
+    const int wowBufSize = (int) (2.0 * kMaxWowDelaySec * sampleRate) + 4;
+    wowBufL.assign ((size_t) wowBufSize, 0.f);
+    wowBufR.assign ((size_t) wowBufSize, 0.f);
+    wowWritePos = 0;
 
     juce::dsp::ProcessSpec spec;
     spec.sampleRate       = sampleRate;
     spec.maximumBlockSize = (juce::uint32) samplesPerBlock;
     spec.numChannels      = 2;
 
-    filterChain.prepare (spec);
-    compressor.prepare  (spec);
+    hpfFilter.prepare  (spec);
+    lpfFilter.prepare  (spec);
+    lastHpf = lastLpf = -1.f;
+    compressor.prepare (spec);
     reverb.reset();
     reverb.setSampleRate (sampleRate);
 
     rebuildDSP();
-    applyPreset (currentPreset);
 }
 
 void DrumSmashProcessor::releaseResources() {}
@@ -221,9 +242,25 @@ void DrumSmashProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     const float bitLevels     = std::pow (2.f, juce::jlimit (1.f, 16.f, bitDepth));
     const float compMakeupLin = juce::Decibels::decibelsToGain (compMakeupDb);
 
-    // Rebuild filter/comp/reverb coefficients every block (cheap enough for
-    // low-freq params; a proper impl would use smoothed values)
+    // Refresh filter/comp/reverb settings every block (filters only when
+    // their cutoff moved; unsmoothed, as before)
     rebuildDSP();
+
+    const bool  pitchActive = std::fabs (pitchRatio - 1.f) > 0.001f;
+    const bool  wowActive   = wowDepth > 0.f && wowRate > 0.f;
+    const float wowInc      = juce::MathConstants<float>::twoPi * wowRate / (float) currentSampleRate;
+    // Vibrato: delay d = A(1 - cos φ) gives a peak pitch deviation of A·ω,
+    // so A = (2^(cents/1200) - 1) / ω, capped to the delay buffer
+    const float wowAmp = wowActive
+        ? juce::jmin ((std::pow (2.f, wowDepth / 1200.f) - 1.f) / wowInc,
+                      (float) (kMaxWowDelaySec * currentSampleRate))
+        : 0.f;
+
+    // Transient shaper: a peak follower (1 ms attack / 50 ms release) and a
+    // 20 ms smoothed copy of it, which lags only when the level jumps
+    const float fastAtt = 1.f - std::exp (-1.f / (0.001f * (float) currentSampleRate));
+    const float envRel  = 1.f - std::exp (-1.f / (0.050f * (float) currentSampleRate));
+    const float slowCoef = 1.f - std::exp (-1.f / (0.020f * (float) currentSampleRate));
 
     float* L = buffer.getWritePointer (0);
     float* R = (numChannels > 1) ? buffer.getWritePointer (1) : nullptr;
@@ -234,19 +271,58 @@ void DrumSmashProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         float l = L[i];
         float r = (R != nullptr) ? R[i] : l;
 
-        // 1. Pitch shift via simple resampling (naive — sounds lo-fi by design)
-        if (std::fabs (pitchRatio - 1.f) > 0.001f || wowDepth > 0.f)
+        // 1a. Pitch shift: two read taps 180° apart sweep a short delay
+        // window at (1 - ratio) samples per sample, equal-power crossfaded
+        if (pitchActive)
         {
-            float wow = (wowDepth > 0.f && wowRate > 0.f)
-                ? (wowDepth / 1200.f) * std::sin (wowPhase)
-                : 0.f;
-            wowPhase += juce::MathConstants<float>::twoPi * wowRate / (float)currentSampleRate;
-            if (wowPhase > juce::MathConstants<float>::twoPi) wowPhase -= juce::MathConstants<float>::twoPi;
+            pitchBufL[(size_t) pitchWritePos] = l;
+            pitchBufR[(size_t) pitchWritePos] = r;
 
-            // Simple pitch: scale amplitude envelope, no true re-pitch buffer
-            float wowGain = std::pow (2.f, wow);
-            l *= wowGain;
-            r *= wowGain;
+            const int size = (int) pitchBufL.size();
+            auto readTap = [&] (const std::vector<float>& b, double delay)
+            {
+                double pos = (double) pitchWritePos - delay;
+                while (pos < 0.0) pos += size;
+                const int   i0 = (int) pos;
+                const int   i1 = (i0 + 1) % size;
+                const float fr = (float) (pos - i0);
+                return b[(size_t) i0] + fr * (b[(size_t) i1] - b[(size_t) i0]);
+            };
+
+            const double W  = (double) pitchWindow;
+            const double d1 = pitchPhase;
+            const double d2 = std::fmod (pitchPhase + 0.5 * W, W);
+            const float  g1 = std::sin (juce::MathConstants<float>::pi * (float) (d1 / W));
+            const float  g2 = std::sin (juce::MathConstants<float>::pi * (float) (d2 / W));
+
+            l = g1 * readTap (pitchBufL, d1) + g2 * readTap (pitchBufL, d2);
+            r = g1 * readTap (pitchBufR, d1) + g2 * readTap (pitchBufR, d2);
+
+            pitchWritePos = (pitchWritePos + 1) % size;
+            pitchPhase   += 1.0 - (double) pitchRatio;
+            if (pitchPhase <  0.0) pitchPhase += W;
+            if (pitchPhase >= W)   pitchPhase -= W;
+        }
+
+        // 1b. Wow/flutter: LFO-modulated delay, so it bends pitch (not level)
+        if (wowActive)
+        {
+            wowBufL[(size_t) wowWritePos] = l;
+            wowBufR[(size_t) wowWritePos] = r;
+
+            const int    size  = (int) wowBufL.size();
+            const double delay = (double) wowAmp * (1.0 - std::cos ((double) wowPhase));
+            double pos = (double) wowWritePos - delay;
+            if (pos < 0.0) pos += size;
+            const int   i0 = (int) pos;
+            const int   i1 = (i0 + 1) % size;
+            const float fr = (float) (pos - i0);
+            l = wowBufL[(size_t) i0] + fr * (wowBufL[(size_t) i1] - wowBufL[(size_t) i0]);
+            r = wowBufR[(size_t) i0] + fr * (wowBufR[(size_t) i1] - wowBufR[(size_t) i0]);
+
+            wowWritePos = (wowWritePos + 1) % size;
+            wowPhase += wowInc;
+            if (wowPhase > juce::MathConstants<float>::twoPi) wowPhase -= juce::MathConstants<float>::twoPi;
         }
 
         // 2. Bit crusher
@@ -280,16 +356,15 @@ void DrumSmashProcessor::processBlock (juce::AudioBuffer<float>& buffer,
             r += noise + crackle;
         }
 
-        // 5. Transient boost (envelope follower → gain boost on attacks)
+        // 5. Transient boost: gain rises only while the follower leads its
+        // smoothed copy (an attack); steady material stays at unity gain
         float env = std::fabs (l + r) * 0.5f;
-        float attackCoef  = 1.f - std::exp (-1.f / (0.001f * (float)currentSampleRate));
-        float releaseCoef = 1.f - std::exp (-1.f / (0.050f * (float)currentSampleRate));
-        if (env > envFollower)
-            envFollower += attackCoef  * (env - envFollower);
-        else
-            envFollower += releaseCoef * (env - envFollower);
+        envFast += (env > envFast ? fastAtt : envRel) * (env - envFast);
+        envSlow += slowCoef * (envFast - envSlow);
 
-        float transientGain = 1.f + transientBoost * 3.f * juce::jlimit(0.f, 1.f, env - envFollower + 0.5f);
+        const float lead   = (envFast - envSlow) / (envFast + 1.0e-6f);
+        const float attack = juce::jlimit (0.f, 1.f, (lead - 0.05f) / 0.95f);  // small deadband for ripple
+        float transientGain = 1.f + transientBoost * 3.f * attack;
         l *= transientGain;
         r *= transientGain;
 
@@ -301,7 +376,8 @@ void DrumSmashProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     {
         juce::dsp::AudioBlock<float> block (buffer);
         juce::dsp::ProcessContextReplacing<float> ctx (block);
-        filterChain.process (ctx);
+        hpfFilter.process (ctx);
+        lpfFilter.process (ctx);
     }
 
     // 7. Compressor
