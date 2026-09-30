@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reverse Reverb — Lizard VST</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="shared.css">
+  <link rel="icon" type="image/x-icon" href="assets/favicon-32.png">
+  <style>
+    :root { --accent: #3aace8; --accent-rgb: 58,172,232; }
+    .hero-face .knob { background: radial-gradient(circle at 35% 30%, #3a3050 0%, #1e1830 45%, #080610 100%); }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <nav class="nav">
+    <a href="index.html">&#8592; All Plugins</a>
+    <span class="sep">/</span>
+    <span>Reverse Reverb</span>
+  </nav>
+
+  <div class="hero">
+    <div class="screw tl"></div><div class="screw tr"></div>
+    <div class="screw bl"></div><div class="screw br"></div>
+    <div class="hero-inner">
+      <div class="hero-face">
+        <span class="hero-num">MODULE 01 / 04</span>
+        <div class="hero-title">Reverse<br>Reverb</div>
+        <div class="knob-row">
+          <div class="knob-unit"><div class="knob"></div><span class="knob-label">Room</span></div>
+          <div class="knob-unit"><div class="knob" style="transform:rotate(40deg)"></div><span class="knob-label">Wet</span></div>
+          <div class="knob-unit"><div class="knob" style="transform:rotate(-20deg)"></div><span class="knob-label">Window</span></div>
+        </div>
+        <div class="hero-cat">
+          <div class="cat-dot" style="background:var(--led-blue);box-shadow:0 0 5px rgba(58,172,232,0.8);"></div>
+          Spatial Effect
+        </div>
+        <img src="assets/logo.png" alt="Lizard VST" class="hero-logo">
+      </div>
+      <div class="hero-body">
+        <div class="hero-tagline">The swell that arrives before the sound.</div>
+        <p class="hero-desc">
+          Reverse Reverb captures audio in short windows, applies reverb, strips the dry signal, reverses the tail, and plays it back timed to land just before each transient. The result: <strong>a ghostly bloom that swells into every note or hit</strong>, as if the room is breathing in anticipation. Window size controls how far ahead the effect reaches — and doubles as the plugin's latency.
+        </p>
+        <div class="hero-dl">
+          <a class="dl-btn mac" href="https://github.com/Ricardo-Silva91/vst_playground/releases/download/reverse_reverb-latest/reverse_reverb.vst3_Mac.zip">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 1 0 20A10 10 0 0 1 12 2z"/><path d="M12 8v8M8 14l4 4 4-4"/></svg>macOS
+          </a>
+          <a class="dl-btn win" href="https://github.com/Ricardo-Silva91/vst_playground/releases/download/reverse_reverb-latest/reverse_reverb.vst3_Windows.zip">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8"/><rect x="13" y="3" width="8" height="8"/><rect x="3" y="13" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/></svg>Windows
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content-grid">
+    <div class="panel">
+      <div class="panel-title">Signal Chain</div>
+      <div class="chain">
+        <span class="chain-node">Input</span><span class="chain-arrow">&#8250;</span>
+        <span class="chain-node highlight">Capture Buffer</span><span class="chain-arrow">&#8250;</span>
+        <span class="chain-node highlight">Reverb (wet only)</span><span class="chain-arrow">&#8250;</span>
+        <span class="chain-node highlight">Reverse tail</span><span class="chain-arrow">&#8250;</span>
+        <span class="chain-node highlight">Wet Mix</span><span class="chain-arrow">&#8250;</span>
+        <span class="chain-node">Output</span>
+      </div>
+      <p class="chain-note">
+        Audio is continuously captured into a rolling buffer of length defined by <em>Window ms</em>. That buffer is fed through a reverb engine with the dry signal subtracted — wet tail only. The tail is reversed, then blended with the dry signal: Dry &times; (1&minus;Wet) + Reversed tail &times; Wet. Because the reversed audio plays out before the dry signal catches up, the bloom precedes every attack. Most DAWs compensate for the latency automatically via Plugin Delay Compensation.
+      </p>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Parameters</div>
+      <div class="param-list">
+        <div class="param-card">
+          <div class="param-name">Room Size</div>
+          <p class="param-desc">Size of the reverb space. Larger rooms produce longer, more diffuse tails. <strong>Smaller values</strong> create tight, intimate blooms. <strong>Larger values</strong> give vast, cathedral-like swells.</p>
+          <div class="param-range">Range: 0.1 &rarr; 1.0 &nbsp;&nbsp; Default: 0.8</div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">Wet Mix</div>
+          <p class="param-desc">Blend between dry signal and reversed reverb tail. At low values the effect is subliminal. <strong>At full wet, the original signal disappears</strong> entirely into the swell.</p>
+          <div class="param-range">Range: 0.0 &rarr; 1.0 &nbsp;&nbsp; Default: 0.8</div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">Window ms</div>
+          <p class="param-desc">Audio capture window length. Longer windows produce bigger blooms. <strong>Window size determines plugin latency exactly</strong> — a 500 ms window introduces 500 ms of latency. Short windows stay rhythmically tight; long windows build massive, slow swells.</p>
+          <div class="param-range">Range: 100 &rarr; 2000 ms &nbsp;&nbsp; Default: 500 ms</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content-grid wide">
+    <div class="panel">
+      <div class="panel-title">Presets</div>
+      <div class="param-list">
+        <div class="param-card">
+          <div class="param-name">Default</div>
+          <p class="param-desc">Balanced starting point. Room 0.8 / Wet 0.8 / Window 500 ms.</p>
+        </div>
+        <div class="param-card">
+          <div class="param-name">Ghost Bloom</div>
+          <p class="param-desc">Large, dreamy swell — best on pads and vocals where the build-up has time to unfold. Room 0.95 / Wet 0.9 / Window 800 ms.</p>
+        </div>
+        <div class="param-card">
+          <div class="param-name">Subtle Breath</div>
+          <p class="param-desc">Gentle and transparent. Good on acoustic sources where you want dimension without drama. Room 0.5 / Wet 0.4 / Window 300 ms.</p>
+        </div>
+        <div class="param-card">
+          <div class="param-name">Wash Out</div>
+          <p class="param-desc">Fully submerged — the dry signal is entirely replaced by the reversed bloom. <strong>Best as a transition effect or texture layer.</strong> Room 1.0 / Wet 1.0 / Window 1500 ms.</p>
+        </div>
+        <div class="param-card">
+          <div class="param-name">Tight Shimmer</div>
+          <p class="param-desc">Short window keeps the bloom punchy and rhythmically coherent. <strong>Works on drums and percussion</strong> where a longer swell would smear the groove. Room 0.6 / Wet 0.7 / Window 150 ms.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content-grid wide">
+    <div class="panel">
+      <div class="panel-title">Use Cases</div>
+      <div class="usecase-list">
+        <div class="usecase-card">
+          <div class="usecase-title">Ghostly pre-echo on vocals</div>
+          <p class="usecase-body">The reversed bloom reinforces each phrase entry with a surreal anticipatory swell — <strong>a whisper of the note before it arrives</strong>. Keep wet mix low for subliminal depth, or automate it up during held notes for a full-blown effect.</p>
+          <div class="usecase-settings">Room Size: 0.6 / Wet Mix: 0.2–0.4 / Window: 200–400 ms</div>
+        </div>
+        <div class="usecase-card">
+          <div class="usecase-title">Snare blooms and drum buildups</div>
+          <p class="usecase-body">A short window creates a <strong>tension-building rise</strong> before the impact. Keep wet mix subtle so the attack still hits hard — the classic film score technique for "breathe before the slam."</p>
+          <div class="usecase-settings">Room Size: 0.5 / Wet Mix: 0.2–0.35 / Window: 100–200 ms</div>
+        </div>
+        <div class="usecase-card">
+          <div class="usecase-title">Atmospheric pads</div>
+          <p class="usecase-body">On a sustained pad the reversed bloom reinforces each harmonic change with a ghostly swell, adding <strong>movement without rhythm</strong>. Works beautifully in parallel with a standard reverb.</p>
+          <div class="usecase-settings">Room Size: 0.7+ / Wet Mix: 0.4–0.6 / Window: 300–800 ms</div>
+        </div>
+        <div class="usecase-card">
+          <div class="usecase-title">Cinematic sound design</div>
+          <p class="usecase-body">Automate Wet Mix up during silence gaps. The reversed tail <strong>fades out the preceding phrase backwards</strong>, creating a surreal dissolve into the next section. At full wet with a long window the plugin becomes a texture generator.</p>
+          <div class="usecase-settings">Room Size: 0.6 / Wet Mix: automate 0 &rarr; 0.8 / Window: 500–1500 ms</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content-grid wide">
+    <div class="panel">
+      <div class="panel-title">Tips and Workflow</div>
+      <div class="tip-list">
+        <div class="tip">
+          <span class="tip-icon">&#9654;</span>
+          <p class="tip-text"><strong>Run it in parallel.</strong> Keep the dry signal intact on a separate track and blend the fully wet plugin return to taste. This avoids pumping at the attack.</p>
+        </div>
+        <div class="tip">
+          <span class="tip-icon">&#9654;</span>
+          <p class="tip-text"><strong>Match window to tempo.</strong> At 120 BPM, one beat is 500 ms. Setting Window ms to 250 ms gives a rhythmically locked bloom that anticipates every other hit without smearing the groove.</p>
+        </div>
+        <div class="tip">
+          <span class="tip-icon">&#9654;</span>
+          <p class="tip-text"><strong>Check your DAW's Plugin Delay Compensation.</strong> The bloom should arrive just before the dry transient, not after it. If timing feels off, confirm PDC is enabled in your DAW's settings.</p>
+        </div>
+        <div class="tip">
+          <span class="tip-icon">&#9654;</span>
+          <p class="tip-text"><strong>Chain into a forward reverb.</strong> Route Reverse Reverb into a regular room reverb on a send. The result is a <strong>bloom into the hit, then a natural decay out of it</strong> — a complete envelope of space around each sound.</p>
+        </div>
+        <div class="tip">
+          <span class="tip-icon">&#9654;</span>
+          <p class="tip-text"><strong>Automate Wet Mix for tension.</strong> Gradually raising it over 4–8 bars before a drop builds subliminal anticipation. Pull it back to zero on the downbeat.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="screw tl"></div><div class="screw tr"></div>
+    <span class="footer-text">Lizard VST &nbsp;&#183;&nbsp; Free VST3 &nbsp;&#183;&nbsp; macOS &amp; Windows</span>
+    <a class="footer-link" href="https://mrgloomy.bandcamp.com/" target="_blank">&#9829; Support the project — buy my music on Bandcamp</a>
+    <a class="footer-link" href="https://github.com/Ricardo-Silva91/vst_playground" target="_blank">&#8599; See on GitHub</a>
+  </footer>
+
+</div>
+</body>
+</html>
