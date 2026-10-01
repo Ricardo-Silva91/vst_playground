@@ -95,7 +95,7 @@ vst_playground/
 └── .github/workflows/build.yml
 ```
 
-Current plugins: `reverse_reverb`, `pitch_wobble`, `through_the_wall`, `drum_smash`, `break_scientist`, `choir_box`, `lizard_suite`.
+Current plugins: `reverse_reverb`, `pitch_wobble`, `through_the_wall`, `drum_smash`, `break_scientist`, `choir_box`, `lizard_suite`, `lizard_tape`.
 
 ### Triggering a build
 

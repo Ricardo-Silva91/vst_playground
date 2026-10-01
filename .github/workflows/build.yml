@@ -17,6 +17,7 @@ on:
           - break_scientist
           - choir_box
           - lizard_suite
+          - lizard_tape
       platforms:
         description: 'Platforms to build'
         required: true

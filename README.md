@@ -15,6 +15,7 @@ A collection of VST3 plugins built with [JUCE](https://juce.com/) and CMake, com
 | `break_scientist` | Detects drum hits and displaces them in time (swing, humanize, drag) with velocity variance | 6 parameters | [Latest release](https://github.com/Ricardo-Silva91/vst_playground/releases/tag/break_scientist-latest) |
 | `choir_box` | Phase-vocoder harmonizer: up/down pitch-shifted voices with detune spread, panning and a saturation stage | 11 parameters | [Latest release](https://github.com/Ricardo-Silva91/vst_playground/releases/tag/choir_box-latest) |
 | `lizard_suite` | Four lo-fi modules in series: Dust (sampler grit) → Chew (tape dropouts) → Murk (dark reverb) → Vinyl (noise bed) | 14 parameters across 4 modules | [Latest release](https://github.com/Ricardo-Silva91/vst_playground/releases/tag/lizard_suite-latest) |
+| `lizard_tape` | Lo-fi tape/cassette: asymmetric saturation → wow & flutter → HF roll-off → program-dependent hiss | Drive, Bias, Wow Depth/Rate, Flutter Depth/Rate, Tone, Hiss, Mix, Output | [Latest release](https://github.com/Ricardo-Silva91/vst_playground/releases/tag/lizard_tape-latest) |
 
 Each release page contains a Mac (`.zip` with `.vst3` bundle) and Windows (`.zip` with `.vst3` folder) download. See [Installing a Built Plugin](#installing-a-built-plugin) below.
 
