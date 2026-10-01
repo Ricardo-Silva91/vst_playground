@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lizard VST — Audio Effects</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/x-icon" href="assets/favicon-32.png">
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    header { margin: 2rem 0 1.5rem; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="nameplate">
+      <div class="brand" style="display:flex;flex-direction:row;align-items:center;gap:1.2rem;">
+        <img src="assets/logo.png" alt="Lizard VST" class="logo-img">
+        <div style="display:flex;flex-direction:column;gap:0.2rem;">
+          <span class="brand-eyebrow">Audio Effects Collection</span>
+          <span class="brand-name">LIZARD<span> VST</span></span>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="led-cluster">
+          <div class="led green blink"></div>
+          <div class="led amber blink2"></div>
+          <div class="led red"></div>
+          <span style="font-family:var(--mono);font-size:9px;letter-spacing:0.15em;color:var(--text-dim);margin-left:0.3rem;">POWER</span>
+        </div>
+        <a class="header-link" href="https://github.com/Ricardo-Silva91/vst_playground" target="_blank">&#8599; See on GitHub</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="intro-strip">
+    <p class="intro-text">
+      A collection of <strong>free, character-driven audio effects</strong> for Mac and Windows.
+      Each plugin explores a distinct sonic idea: spatial bloom, organic pitch drift, architectural transmission, raw drum destruction.
+      <strong>All VST3. No registration.</strong>
+    </p>
+    <div class="spec-row">
+      <div class="spec"><span class="spec-val">06</span><span class="spec-label">Plugins</span></div>
+      <div class="spec"><span class="spec-val">VST3</span><span class="spec-label">Format</span></div>
+  </div>
+
+  <div class="installer-strip">
+    <div class="installer-strip-left">
+      <span class="installer-strip-label">One-click installer</span>
+      <span class="installer-strip-desc">A Python script that downloads, installs, and updates all plugins — no manual unzipping, no Gatekeeper warnings.</span>
+    </div>
+    <div class="installer-strip-cmds">
+      <div class="installer-cmd"><span class="installer-cmd-os">macOS</span><code>python3 install_lizard_vst.py</code></div>
+      <div class="installer-cmd"><span class="installer-cmd-os">Windows</span><code>python install_lizard_vst.py</code></div>
+    </div>
+    <a class="dl-btn" href="install.html" style="color:var(--led-amber);border-color:rgba(232,130,10,0.3);white-space:nowrap;align-self:center;">Full details &#8250;</a>
+  </div>
+
+  <div class="modules">
+
+    <!-- REVERSE REVERB -->
+    <div class="module">
+      <div class="screw tl"></div><div class="screw tr"></div>
+      <div class="screw bl"></div><div class="screw br"></div>
+      <div class="module-inner">
+        <div class="module-face" data-num="01">
+          <div class="knob-wrap">
+            <div class="knob"></div>
+            <span class="knob-label">Wet Mix</span>
+          </div>
+          <div class="module-name-wrap">
+            <div class="module-name">Reverse<br>Reverb</div>
+          </div>
+          <div class="cat-badge">
+            <div class="cat-dot" style="background:var(--led-blue);box-shadow:0 0 4px rgba(58,172,232,0.7);"></div>
+            Spatial
+          </div>
+        </div>
+        <div class="module-content">
+          <p class="module-desc">
+            Captures audio in windows, reverses them, applies reverb, and plays the tail back so the <strong>bloom swells before the hit lands</strong>. The wet signal arrives ahead of the dry signal — ghostly, atmospheric, eerie. Latency equals the window length.
+          </p>
+          <div class="module-bottom">
+            <div class="params-group">
+              <p class="params-label">Parameters</p>
+              <div class="params">
+                <span class="param">Room Size</span>
+                <span class="param">Wet Mix</span>
+                <span class="param">Window ms</span>
+              </div>
+            </div>
+            <div class="dl-row">
+              <a class="dl-btn mac" href="https://github.com/Ricardo-Silva91/vst_playground/releases/download/reverse_reverb-latest/reverse_reverb.vst3_Mac.zip">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 1 0 20A10 10 0 0 1 12 2z"/><path d="M12 8v8M8 14l4 4 4-4"/></svg>macOS
+              </a>
+              <a class="dl-btn win" href="https://github.com/Ricardo-Silva91/vst_playground/releases/download/reverse_reverb-latest/reverse_reverb.vst3_Windows.zip">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8"/><rect x="13" y="3" width="8" height="8"/><rect x="3" y="13" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/></svg>Windows
+              </a>
+              <a class="dl-btn" href="reverse_reverb.html" style="color:var(--silk);margin-left:0.3rem;">Details &#8250;</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="vu-wrap">
+        <div class="vu-seg on-red"></div>
+        <div class="vu-seg on-amber"></div>
+        <div class="vu-seg on-amber"></div>
+        <div class="vu-seg on-green"></div>
+        <div class="vu-seg on-green"></div>
+        <div class="vu-seg on-green"></div>
+        <div class="vu-seg"></div>
+        <div class="vu-seg"></div>
+      </div>
+    </div>
+
+    <!-- PITCH WOBBLE -->
+    <div class="module">
+      <div class="screw tl"></div><div class="screw tr"></div>
+      <div class="screw bl"></div><div class="screw br"></div>
+      <div class="module-inner">
+        <div class="module-face" data-num="02">
+          <div class="knob-wrap">
+            <div class="knob" style="background:radial-gradient(circle at 35% 30%,#4a3a20 0%,#2a1e0a 45%,#0d0a04 100%);"></div>
+            <span class="knob-label">Rate</span>
+          </div>
+          <div class="module-name-wrap">
+            <div class="module-name">Pitch<br>Wobble</div>
+          </div>
+          <div class="cat-badge">
+            <div class="cat-dot" style="background:var(--led-amber);box-shadow:0 0 4px rgba(232,130,10,0.7);"></div>
+            Modulation
+          </div>
+        </div>
+        <div class="module-content">
+          <p class="module-desc">
+            Continuously drifts pitch by small random amounts, never straying far from the original. Each movement picks a new random target and glides toward it, creating the <strong>natural micro-tuning of a live performance or the flutter of tape degradation</strong>. Not a vibrato.
+          </p>
+          <div class="module-bottom">
+            <div class="params-group">
+              <p class="params-label">Parameters</p>
+              <div class="params">
+                <span class="param">Depth (cents)</span>
+                <span class="param">Rate (Hz)</span>
+                <span class="param">Smoothness</span>
+              </div>
+            </div>
+            <div class="dl-row">
+              <a class="dl-btn mac" href="https://github.com/Ricardo-Silva91/vst_playground/releases/download/pitch_wobble-latest/pitch_wobble.vst3_Mac.zip">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 1 0 20A10 10 0 0 1 12 2z"/><path d="M12 8v8M8 14l4 4 4-4"/></svg>macOS
+              </a>
+              <a class="dl-btn win" href="https://github.com/Ricardo-Silva91/vst_playground/releases/download/pitch_wobble-latest/pitch_wobble.vst3_Windows.zip">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8"/><rect x="13" y="3" width="8" height="8"/><rect x="3" y="13" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/></svg>Windows
+              </a>
+              <a class="dl-btn" href="pitch_wobble.html" style="color:var(--silk);margin-left:0.3rem;">Details &#8250;</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="vu-wrap">
+        <div class="vu-seg"></div>
+        <div class="vu-seg on-amber"></div>
+        <div class="vu-seg on-amber"></div>
+        <div class="vu-seg on-green"></div>
+        <div class="vu-seg on-green"></div>
+        <div class="vu-seg on-green"></div>
+        <div class="vu-seg on-green"></div>
+        <div class="vu-seg"></div>
+      </div>
+    </div>
+
+    <!-- THROUGH THE WALL -->
+    <div class="module">
+      <div class="screw tl"></div><div class="screw tr"></div>
+      <div class="screw bl"></div><div class="screw br"></div>
+      <div class="module-inner">
+        <div class="module-face" data-num="03">
+          <div class="knob-wrap">
+            <div class="knob" style="background:radial-gradient(circle at 35% 30%,#2a3a2a 0%,#141e14 45%,#060c06 100%);"></div>
+            <span class="knob-label">Thickness</span>
+          </div>
+          <div class="module-name-wrap">
+            <div class="module-name">Through<br>the Wall</div>
+          </div>
+          <div class="cat-badge">
+            <div class="cat-dot" style="background:var(--led-green);box-shadow:0 0 4px rgba(78,207,106,0.7);"></div>
+            Physical
+          </div>
+        </div>
+        <div class="module-content">
+          <p class="module-desc">
+            Puts your audio on the other side of a wall. Not a lo-fi filter — a <strong>physically modelled transmission effect</strong> replicating four real acoustic phenomena: high-frequency absorption, wall resonance, room bleed, and spatial distance.
+          </p>
+          <div class="module-bottom">
+            <div class="params-group">
+              <p class="params-label">Parameters</p>
+              <div class="params">
+                <span class="param">Wall Thickness</span>
+                <span class="param">Room Bleed</span>
+                <span class="param">Wall Rattle</span>
+                <span class="param">Distance</span>
+              </div>
+            </div>
+            <div class="dl-row">
+              <a class="dl-btn mac" href="https://github.com/Ricardo-Silva91/vst_playground/releases/download/through_the_wall-latest/Through_The_Wall.vst3_Mac.zip">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 1 0 20A10 10 0 0 1 12 2z"/><path d="M12 8v8M8 14l4 4 4-4"/></svg>macOS
+              </a>
+              <a class="dl-btn win" href="https://github.com/Ricardo-Silva91/vst_playground/releases/download/through_the_wall-latest/Through_The_Wall.vst3_Windows.zip">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8"/><rect x="13" y="3" width="8" height="8"/><rect x="3" y="13" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/></svg>Windows
+              </a>
+              <a class="dl-btn" href="through_the_wall.html" style="color:var(--silk);margin-left:0.3rem;">Details &#8250;</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="vu-wrap">
+        <div class="vu-seg"></div>
+        <div class="vu-seg"></div>
+        <div class="vu-seg on-amber"></div>
+        <div class="vu-seg on-green"></div>
+        <div class="vu-seg on-green"></div>
+        <div class="vu-seg on-green"></div>
+        <div class="vu-seg on-green"></div>
+        <div class="vu-seg on-green"></div>
+      </div>
+    </div>
+
+    <!-- DRUM SMASH -->
+    <div class="module">
+      <div class="screw tl"></div><div class="screw tr"></div>
+      <div class="screw bl"></div><div class="screw br"></div>
+      <div class="module-inner">
+        <div class="module-face" data-num="04">
+          <div class="knob-wrap">
+            <div class="knob" style="background:radial-gradient(circle at 35% 30%,#3a1a14 0%,#200e0a 45%,#0a0504 100%);"></div>
+            <span class="knob-label">Drive</span>
+          </div>
+          <div class="module-name-wrap">
+            <div class="module-name">Drum<br>Smash</div>
+          </div>
+          <div class="cat-badge">
+            <div class="cat-dot" style="background:var(--led-red);box-shadow:0 0 4px rgba(232,58,42,0.8);"></div>
+            Drum Processor
+          </div>
+        </div>
+        <div class="module-content">
+          <p class="module-desc">
+            Runs drums through a full destruction chain: bit crushing, saturation, vinyl noise, compression, reverb, pitch and wow flutter, stereo shaping. <strong>Five knobs cover the essentials. 21 parameters cover everything.</strong> Eight factory presets cover the moods.
+          </p>
+          <div class="module-bottom">
+            <div class="params-group">
+              <p class="params-label">Factory Presets</p>
+              <div class="presets">
+                <span class="preset">Dusty Vinyl</span>
+                <span class="preset">Heavy Hitter</span>
+                <span class="preset">Bit Crusher</span>
+                <span class="preset">Lo-Fi Radio</span>
+                <span class="preset">Punchy Club</span>
+                <span class="preset">Tape Warped</span>
+                <span class="preset">Nuclear Snare</span>
+                <span class="preset">Bedroom Boom-Bap</span>
+              </div>
+              <p class="params-label" style="margin-top:0.5rem;">Front Panel Knobs</p>
+              <div class="params">
+                <span class="param">Drive</span>
+                <span class="param">Crush</span>
+                <span class="param">Noise</span>
+                <span class="param">Comp</span>
+                <span class="param">Verb</span>
+              </div>
+            </div>
+            <div class="dl-row">
+              <a class="dl-btn mac" href="https://github.com/Ricardo-Silva91/vst_playground/releases/download/drum_smash-latest/Drum_Smash.vst3_Mac.zip">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 1 0 20A10 10 0 0 1 12 2z"/><path d="M12 8v8M8 14l4 4 4-4"/></svg>macOS
+              </a>
+              <a class="dl-btn win" href="https://github.com/Ricardo-Silva91/vst_playground/releases/download/drum_smash-latest/Drum_Smash.vst3_Windows.zip">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8"/><rect x="13" y="3" width="8" height="8"/><rect x="3" y="13" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/></svg>Windows
+              </a>
+              <a class="dl-btn" href="drum_smash.html" style="color:var(--silk);margin-left:0.3rem;">Details &#8250;</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="vu-wrap">
+        <div class="vu-seg on-red"></div>
+        <div class="vu-seg on-red"></div>
+        <div class="vu-seg on-amber"></div>
+        <div class="vu-seg on-amber"></div>
+        <div class="vu-seg on-green"></div>
+        <div class="vu-seg on-green"></div>
+        <div class="vu-seg on-green"></div>
+        <div class="vu-seg on-green"></div>
+      </div>
+    </div>
+
+    <!-- BREAK SCIENTIST -->
+    <div class="module">
+      <div class="screw tl"></div><div class="screw tr"></div>
+      <div class="screw bl"></div><div class="screw br"></div>
+      <div class="module-inner">
+        <div class="module-face" data-num="05">
+          <div class="knob-wrap">
+            <div class="knob" style="background:radial-gradient(circle at 35% 30%,#2e1a4a 0%,#1a0e2e 45%,#0a0614 100%);"></div>
+            <span class="knob-label">Drag</span>
+          </div>
+          <div class="module-name-wrap">
+            <div class="module-name">Break<br>Scientist</div>
+          </div>
+          <div class="cat-badge">
+            <div class="cat-dot" style="background:#9b59f5;box-shadow:0 0 4px rgba(155,89,245,0.8);"></div>
+            Groove Processor
+          </div>
+        </div>
+        <div class="module-content">
+          <p class="module-desc">
+            Detects transients in your drum break and displaces them in time — pushing hits earlier or later, then reshaping their velocities. <strong>The break starts to feel like it was programmed by a human, not quantised to a grid.</strong> Drop it on a break, pick a preset, consolidate.
+          </p>
+          <div class="module-bottom">
+            <div class="params-group">
+              <p class="params-label">Parameters</p>
+              <div class="params">
+                <span class="param">Swing</span>
+                <span class="param">Humanize</span>
+                <span class="param">Drag</span>
+                <span class="param">Sensitivity</span>
+                <span class="param">Vel Variance</span>
+                <span class="param">Wet Mix</span>
+              </div>
+            </div>
+            <div class="dl-row">
+              <a class="dl-btn mac" href="https://github.com/Ricardo-Silva91/vst_playground/releases/download/break_scientist-latest/Break_Scientist.vst3_Mac.zip">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 1 0 20A10 10 0 0 1 12 2z"/><path d="M12 8v8M8 14l4 4 4-4"/></svg>macOS
+              </a>
+              <a class="dl-btn win" href="https://github.com/Ricardo-Silva91/vst_playground/releases/download/break_scientist-latest/Break_Scientist.vst3_Windows.zip">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8"/><rect x="13" y="3" width="8" height="8"/><rect x="3" y="13" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/></svg>Windows
+              </a>
+              <a class="dl-btn" href="break_scientist.html" style="color:var(--silk);margin-left:0.3rem;">Details &#8250;</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="vu-wrap">
+        <div class="vu-seg on-red"></div>
+        <div class="vu-seg on-amber"></div>
+        <div class="vu-seg on-amber"></div>
+        <div class="vu-seg on-green"></div>
+        <div class="vu-seg on-green"></div>
+        <div class="vu-seg on-green"></div>
+        <div class="vu-seg on-green"></div>
+        <div class="vu-seg on-green"></div>
+      </div>
+    </div>
+
+
+    <!-- CHOIR BOX -->
+    <div class="module">
+      <div class="screw tl"></div><div class="screw tr"></div>
+      <div class="screw bl"></div><div class="screw br"></div>
+      <div class="module-inner">
+        <div class="module-face" data-num="06">
+          <div class="knob-wrap">
+            <div class="knob" style="background:radial-gradient(circle at 35% 30%,#1e3a38 0%,#0f211f 45%,#050f0e 100%);"></div>
+            <span class="knob-label">Detune</span>
+          </div>
+          <div class="module-name-wrap">
+            <div class="module-name">Choir<br>Box</div>
+          </div>
+          <div class="cat-badge">
+            <div class="cat-dot" style="background:#4ecdc4;box-shadow:0 0 4px rgba(78,205,196,0.8);"></div>
+            Vocal Harmonizer
+          </div>
+        </div>
+        <div class="module-content">
+          <p class="module-desc">
+            Layers pitch-shifted voices above and below your signal and spreads them across the stereo field. <strong>Up to eight shifted voices total</strong>, with independent levels and an optional saturation and hard-clip chain — from tight studio doubles to wrecked lo-fi choir stacks.
+          </p>
+          <div class="module-bottom">
+            <div class="params-group">
+              <p class="params-label">Parameters</p>
+              <div class="params">
+                <span class="param">Up Semitones</span>
+                <span class="param">Down Semitones</span>
+                <span class="param">Voices</span>
+                <span class="param">Detune</span>
+                <span class="param">Sat</span>
+                <span class="param">Crush</span>
+                <span class="param">Dist Mix</span>
+                <span class="param">Output</span>
+              </div>
+            </div>
+            <div class="dl-row">
+              <a class="dl-btn mac" href="https://github.com/Ricardo-Silva91/vst_playground/releases/download/choir_box-latest/Choir_Box.vst3_Mac.zip">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 1 0 20A10 10 0 0 1 12 2z"/><path d="M12 8v8M8 14l4 4 4-4"/></svg>macOS
+              </a>
+              <a class="dl-btn win" href="https://github.com/Ricardo-Silva91/vst_playground/releases/download/choir_box-latest/Choir_Box.vst3_Windows.zip">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8"/><rect x="13" y="3" width="8" height="8"/><rect x="3" y="13" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/></svg>Windows
+              </a>
+              <a class="dl-btn" href="choir_box.html" style="color:var(--silk);margin-left:0.3rem;">Details &#8250;</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="vu-wrap">
+        <div class="vu-seg"></div>
+        <div class="vu-seg" style="background:#4ecdc4;box-shadow:0 0 3px rgba(78,205,196,0.6);border-color:#3aafa8;"></div>
+        <div class="vu-seg" style="background:#4ecdc4;box-shadow:0 0 3px rgba(78,205,196,0.6);border-color:#3aafa8;"></div>
+        <div class="vu-seg" style="background:#4ecdc4;box-shadow:0 0 3px rgba(78,205,196,0.6);border-color:#3aafa8;"></div>
+        <div class="vu-seg" style="background:#4ecdc4;box-shadow:0 0 3px rgba(78,205,196,0.6);border-color:#3aafa8;"></div>
+        <div class="vu-seg" style="background:#4ecdc4;box-shadow:0 0 3px rgba(78,205,196,0.6);border-color:#3aafa8;"></div>
+        <div class="vu-seg on-amber"></div>
+        <div class="vu-seg"></div>
+      </div>
+    </div>
+
+  </div><!-- /modules -->
+
+  <footer>
+    <div class="screw tl"></div><div class="screw tr"></div>
+    <span class="footer-text">Lizard VST &nbsp;&#183;&nbsp; Free VST3 &nbsp;&#183;&nbsp; macOS &amp; Windows</span>
+    <a class="footer-link" href="https://mrgloomy.bandcamp.com/" target="_blank">&#9829; Support the project — buy my music on Bandcamp</a>
+    <a class="footer-link" href="https://github.com/Ricardo-Silva91/vst_playground" target="_blank">&#8599; See on GitHub</a>
+  </footer>
+
+</div>
+</body>
+</html>

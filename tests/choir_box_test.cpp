@@ -21,17 +21,17 @@ TEST_CASE("ChoirBox - parameters", "[choir_box]")
 
     SECTION("default values match spec")
     {
-        REQUIRE(getParam(proc.apvts, "upSemitones")  == Catch::Approx(7.f).margin(0.01f));
-        REQUIRE(getParam(proc.apvts, "downSemitones")== Catch::Approx(-7.f).margin(0.01f));
-        REQUIRE(getParam(proc.apvts, "voices")       == Catch::Approx(1.f).margin(0.01f));
-        REQUIRE(getParam(proc.apvts, "detune")       == Catch::Approx(20.f).margin(0.1f));
-        REQUIRE(getParam(proc.apvts, "dryLevel")     == Catch::Approx(1.0f).margin(0.01f));
-        REQUIRE(getParam(proc.apvts, "upLevel")      == Catch::Approx(0.7f).margin(0.01f));
-        REQUIRE(getParam(proc.apvts, "downLevel")    == Catch::Approx(0.7f).margin(0.01f));
-        REQUIRE(getParam(proc.apvts, "saturation")   == Catch::Approx(0.0f).margin(0.01f));
-        REQUIRE(getParam(proc.apvts, "crush")        == Catch::Approx(0.0f).margin(0.01f));
-        REQUIRE(getParam(proc.apvts, "distMix")      == Catch::Approx(0.0f).margin(0.01f));
-        REQUIRE(getParam(proc.apvts, "masterOut")    == Catch::Approx(1.0f).margin(0.01f));
+        REQUIRE(getDefault(proc.apvts, "upSemitones")  == Catch::Approx(7.f).margin(0.01f));
+        REQUIRE(getDefault(proc.apvts, "downSemitones")== Catch::Approx(-7.f).margin(0.01f));
+        REQUIRE(getDefault(proc.apvts, "voices")       == Catch::Approx(1.f).margin(0.01f));
+        REQUIRE(getDefault(proc.apvts, "detune")       == Catch::Approx(20.f).margin(0.1f));
+        REQUIRE(getDefault(proc.apvts, "dryLevel")     == Catch::Approx(1.0f).margin(0.01f));
+        REQUIRE(getDefault(proc.apvts, "upLevel")      == Catch::Approx(0.7f).margin(0.01f));
+        REQUIRE(getDefault(proc.apvts, "downLevel")    == Catch::Approx(0.7f).margin(0.01f));
+        REQUIRE(getDefault(proc.apvts, "saturation")   == Catch::Approx(0.0f).margin(0.01f));
+        REQUIRE(getDefault(proc.apvts, "crush")        == Catch::Approx(0.0f).margin(0.01f));
+        REQUIRE(getDefault(proc.apvts, "distMix")      == Catch::Approx(0.0f).margin(0.01f));
+        REQUIRE(getDefault(proc.apvts, "masterOut")    == Catch::Approx(1.0f).margin(0.01f));
     }
 
     SECTION("parameter ranges")
@@ -117,17 +117,58 @@ TEST_CASE("ChoirBox - audio processing", "[choir_box]")
         setParam(proc.apvts, "crush",     0.0f);
         setParam(proc.apvts, "distMix",   0.0f);
 
-        // Fill the phase-vocoder latency buffer first
-        flushWithSilence(proc, 10);
-
+        // The dry path is delayed by the reported latency: feed past it
         juce::AudioBuffer<float> buf(2, 512);
-        fillWithSine(buf, 440.f, 44100.0, 0.5f);
-        float inputRms = rmsOf(buf);
-        proc.processBlock(buf, midi);
+        float inputRms = 0.f;
+        for (int block = 0; block < 6; ++block)
+        {
+            fillWithSine(buf, 441.f, 44100.0, 0.5f);   // whole cycles per block
+            inputRms = rmsOf(buf);
+            proc.processBlock(buf, midi);
+        }
 
         REQUIRE(allFinite(buf));
         // The dry signal should pass through; allow for latency/windowing effects
         REQUIRE(rmsOf(buf) > inputRms * 0.1f);
+    }
+
+    SECTION("dry path and voices are time-aligned at the reported latency")
+    {
+        setParam(proc.apvts, "upSemitones", 0.0f);
+        setParam(proc.apvts, "voices",      1.0f);
+        setParam(proc.apvts, "detune",      0.0f);
+        setParam(proc.apvts, "downLevel",   0.0f);
+        setParam(proc.apvts, "masterOut",   1.0f);
+        setParam(proc.apvts, "saturation",  0.0f);
+        setParam(proc.apvts, "crush",       0.0f);
+        setParam(proc.apvts, "distMix",     0.0f);
+
+        auto peakIndex = [&](float dry, float up)
+        {
+            setParam(proc.apvts, "dryLevel", dry);
+            setParam(proc.apvts, "upLevel",  up);
+            proc.prepareToPlay(44100.0, 512);
+            int best = -1;
+            float bestVal = 0.f;
+            for (int block = 0; block < 12; ++block)
+            {
+                auto buf = makeSilent(2, 512);
+                if (block == 0) buf.setSample(0, 100, 1.f);
+                proc.processBlock(buf, midi);
+                for (int i = 0; i < 512; ++i)
+                    if (std::abs(buf.getSample(0, i)) > bestVal)
+                    {
+                        bestVal = std::abs(buf.getSample(0, i));
+                        best = block * 512 + i;
+                    }
+            }
+            return best;
+        };
+
+        const int dryPeak   = peakIndex(1.f, 0.f);
+        const int voicePeak = peakIndex(0.f, 1.f);
+        REQUIRE(dryPeak == 100 + proc.getLatencySamples());
+        REQUIRE(std::abs(voicePeak - dryPeak) <= 2);
     }
 
     SECTION("pitch-only mode (dryLevel=0): produces output from pitch shifted voices")
@@ -258,6 +299,21 @@ TEST_CASE("ChoirBox - state management", "[choir_box]")
         REQUIRE(getParam(proc.apvts, "downSemitones")== Catch::Approx(-3.f).margin(0.01f));
         REQUIRE(getParam(proc.apvts, "voices")       == Catch::Approx(3.f).margin(0.01f));
         REQUIRE(getParam(proc.apvts, "dryLevel")     == Catch::Approx(0.5f).margin(0.01f));
+    }
+
+    SECTION("prepareToPlay keeps user and restored parameter values")
+    {
+        ChoirBoxProcessor proc;
+        setParam(proc.apvts, "upSemitones", 4.f);
+        proc.prepareToPlay(44100.0, 512);
+        REQUIRE(getParam(proc.apvts, "upSemitones") == Catch::Approx(4.f).margin(0.01f));
+
+        juce::MemoryBlock stateData;
+        proc.getStateInformation(stateData);
+        ChoirBoxProcessor restored;
+        restored.setStateInformation(stateData.getData(), (int)stateData.getSize());
+        restored.prepareToPlay(48000.0, 256);
+        REQUIRE(getParam(restored.apvts, "upSemitones") == Catch::Approx(4.f).margin(0.01f));
     }
 
     SECTION("FFT latency is reported correctly")

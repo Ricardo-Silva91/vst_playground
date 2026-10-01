@@ -51,10 +51,16 @@ private:
 
     int currentProgram = 0;
 
-    static constexpr int BUFFER_SIZE = 65536;
+    // The read head trails the write head by a nominal delay (reported as
+    // latency). Wobble drift is pulled back toward it with a slow correction
+    // so the gap stays well inside the buffer at any setting.
+    static constexpr int    BUFFER_SIZE        = 1 << 17;
+    static constexpr double kNominalDelaySec   = 0.2;
+    static constexpr double kDriftCorrectionSec = 8.0;
     std::vector<float> circularBuffer[2];
-    int   writePos = 0;
-    float readPos  = 0.0f;
+    int    writePos     = 0;
+    double readPos      = 0.0;
+    int    nominalDelay = 0;
 
     double currentSampleRate = 44100.0;
 

@@ -196,6 +196,9 @@ ChoirBoxProcessor::ChoirBoxProcessor()
           .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
       apvts (*this, nullptr, "Parameters", createParameterLayout())
 {
+    // Start on the first preset; prepareToPlay must not re-apply it, or it
+    // would overwrite restored session state and the user's own edits.
+    applyPreset (0);
 }
 
 ChoirBoxProcessor::~ChoirBoxProcessor() {}
@@ -243,9 +246,13 @@ void ChoirBoxProcessor::prepareToPlay (double sampleRate, int /*samplesPerBlock*
         downShifterR[(size_t)v].prepare (sampleRate);
     }
 
+    dryDelayL.fill (0.f);
+    dryDelayR.fill (0.f);
+    dryDelayPos   = 0;
+    lastNumVoices = kMaxVoices;
+
     // Report latency: one FFT window so host can compensate
     setLatencySamples (PitchShifter::kFftSize);
-    applyPreset (currentPreset);
 }
 
 void ChoirBoxProcessor::releaseResources() {}
@@ -273,6 +280,16 @@ void ChoirBoxProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     const float distMix   = apvts.getRawParameterValue (kDistMix)      ->load();
     const float masterOut = apvts.getRawParameterValue (kMasterOut)    ->load();
 
+    // Voices that were idle hold stale audio — clear them as they come back
+    for (int v = lastNumVoices; v < numVoices; ++v)
+    {
+        upShifterL[(size_t)v].reset();
+        upShifterR[(size_t)v].reset();
+        downShifterL[(size_t)v].reset();
+        downShifterR[(size_t)v].reset();
+    }
+    lastNumVoices = numVoices;
+
     // ── Pitch ratios ──────────────────────────────────────────────────────────
     for (int v = 0; v < kMaxVoices; ++v)
     {
@@ -297,6 +314,21 @@ void ChoirBoxProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 
     const float voiceScale = 1.f / (float)numVoices;
 
+    // Equal-power pan gains per voice (up voices lean right, down voices left)
+    std::array<float, kMaxVoices> upPanL {}, upPanR {}, downPanL {}, downPanR {};
+    for (int v = 0; v < numVoices; ++v)
+    {
+        const float t = (numVoices > 1)
+                        ? (float)v / (float)(numVoices - 1)
+                        : 0.5f;
+        const float upPan   = 0.5f + t * 0.5f;
+        const float downPan = 0.5f - t * 0.5f;
+        upPanL[(size_t)v]   = std::cos (upPan   * juce::MathConstants<float>::halfPi);
+        upPanR[(size_t)v]   = std::sin (upPan   * juce::MathConstants<float>::halfPi);
+        downPanL[(size_t)v] = std::cos (downPan * juce::MathConstants<float>::halfPi);
+        downPanR[(size_t)v] = std::sin (downPan * juce::MathConstants<float>::halfPi);
+    }
+
     for (int i = 0; i < numSamples; ++i)
     {
         const float inL = L[i];
@@ -313,32 +345,28 @@ void ChoirBoxProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         const float distL    = inL + distMix * (clipL - inL);
         const float distR    = inR + distMix * (clipR - inR);
 
+        // ── Dry (delayed to match the voices) ────────────────────────────────
+        const float dryL = dryDelayL[(size_t)dryDelayPos];
+        const float dryR = dryDelayR[(size_t)dryDelayPos];
+        dryDelayL[(size_t)dryDelayPos] = distL;
+        dryDelayR[(size_t)dryDelayPos] = distR;
+        dryDelayPos = (dryDelayPos + 1) % PitchShifter::kFftSize;
+
         // ── Voices ────────────────────────────────────────────────────────────
-        float outL = distL * dryLvl;
-        float outR = distR * dryLvl;
+        float outL = dryL * dryLvl;
+        float outR = dryR * dryLvl;
 
         for (int v = 0; v < numVoices; ++v)
         {
-            const float t = (numVoices > 1)
-                            ? (float)v / (float)(numVoices - 1)
-                            : 0.5f;
-
-            const float upPan    = 0.5f + t * 0.5f;
-            const float downPan  = 0.5f - t * 0.5f;
-            const float upPanR   = std::sin (upPan   * juce::MathConstants<float>::halfPi);
-            const float upPanL   = std::cos (upPan   * juce::MathConstants<float>::halfPi);
-            const float downPanL = std::cos (downPan * juce::MathConstants<float>::halfPi);
-            const float downPanR = std::sin (downPan * juce::MathConstants<float>::halfPi);
-
             const float upL  = upShifterL[(size_t)v].processSample (distL);
             const float upR  = upShifterR[(size_t)v].processSample (distR);
             const float dnL  = downShifterL[(size_t)v].processSample (distL);
             const float dnR  = downShifterR[(size_t)v].processSample (distR);
 
-            outL += upLvl   * voiceScale * upPanL   * upL;
-            outR += upLvl   * voiceScale * upPanR   * upR;
-            outL += downLvl * voiceScale * downPanL * dnL;
-            outR += downLvl * voiceScale * downPanR * dnR;
+            outL += upLvl   * voiceScale * upPanL[(size_t)v]   * upL;
+            outR += upLvl   * voiceScale * upPanR[(size_t)v]   * upR;
+            outL += downLvl * voiceScale * downPanL[(size_t)v] * dnL;
+            outR += downLvl * voiceScale * downPanR[(size_t)v] * dnR;
         }
 
         L[i] = outL * masterOut;

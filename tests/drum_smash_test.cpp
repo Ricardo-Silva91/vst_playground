@@ -24,16 +24,16 @@ TEST_CASE("DrumSmash - parameters", "[drum_smash]")
 
     SECTION("default values match spec")
     {
-        REQUIRE(getParam(proc.apvts, "bitDepth")      == Catch::Approx(16.f).margin(0.1f));
-        REQUIRE(getParam(proc.apvts, "sampleRateDiv") == Catch::Approx(1.f).margin(0.01f));
-        REQUIRE(getParam(proc.apvts, "drive")         == Catch::Approx(0.f).margin(0.01f));
-        REQUIRE(getParam(proc.apvts, "outputGain")    == Catch::Approx(1.f).margin(0.01f));
-        REQUIRE(getParam(proc.apvts, "noiseAmount")   == Catch::Approx(0.f).margin(0.01f));
-        REQUIRE(getParam(proc.apvts, "lpfCutoff")     == Catch::Approx(22000.f).margin(1.f));
-        REQUIRE(getParam(proc.apvts, "hpfCutoff")     == Catch::Approx(20.f).margin(0.1f));
-        REQUIRE(getParam(proc.apvts, "reverbWet")     == Catch::Approx(0.f).margin(0.01f));
-        REQUIRE(getParam(proc.apvts, "stereoWidth")   == Catch::Approx(1.f).margin(0.01f));
-        REQUIRE(getParam(proc.apvts, "transientBoost")== Catch::Approx(0.f).margin(0.01f));
+        REQUIRE(getDefault(proc.apvts, "bitDepth")      == Catch::Approx(16.f).margin(0.1f));
+        REQUIRE(getDefault(proc.apvts, "sampleRateDiv") == Catch::Approx(1.f).margin(0.01f));
+        REQUIRE(getDefault(proc.apvts, "drive")         == Catch::Approx(0.f).margin(0.01f));
+        REQUIRE(getDefault(proc.apvts, "outputGain")    == Catch::Approx(1.f).margin(0.01f));
+        REQUIRE(getDefault(proc.apvts, "noiseAmount")   == Catch::Approx(0.f).margin(0.01f));
+        REQUIRE(getDefault(proc.apvts, "lpfCutoff")     == Catch::Approx(22000.f).margin(1.f));
+        REQUIRE(getDefault(proc.apvts, "hpfCutoff")     == Catch::Approx(20.f).margin(0.1f));
+        REQUIRE(getDefault(proc.apvts, "reverbWet")     == Catch::Approx(0.f).margin(0.01f));
+        REQUIRE(getDefault(proc.apvts, "stereoWidth")   == Catch::Approx(1.f).margin(0.01f));
+        REQUIRE(getDefault(proc.apvts, "transientBoost")== Catch::Approx(0.f).margin(0.01f));
     }
 
     SECTION("parameter ranges")
@@ -99,6 +99,35 @@ TEST_CASE("DrumSmash - presets", "[drum_smash]")
 }
 
 // ── Audio processing tests ────────────────────────────────────────────────────
+
+// Everything off except what a section turns on
+static void setCleanChain(juce::AudioProcessorValueTreeState& apvts)
+{
+    setParam(apvts, "bitDepth",       16.f);
+    setParam(apvts, "sampleRateDiv",   1.f);
+    setParam(apvts, "drive",           0.f);
+    setParam(apvts, "noiseAmount",     0.f);
+    setParam(apvts, "crackleRate",     0.f);
+    setParam(apvts, "reverbWet",       0.f);
+    setParam(apvts, "lpfCutoff",   22000.f);
+    setParam(apvts, "hpfCutoff",      20.f);
+    setParam(apvts, "compThreshold",   0.f);
+    setParam(apvts, "compMakeup",      0.f);
+    setParam(apvts, "stereoWidth",     1.f);
+    setParam(apvts, "transientBoost",  0.f);
+    setParam(apvts, "pitchSemitones",  0.f);
+    setParam(apvts, "wowRate",         0.f);
+    setParam(apvts, "wowDepth",        0.f);
+    setParam(apvts, "outputGain",      1.f);
+}
+
+static float channelRms(const juce::AudioBuffer<float>& buf, int ch)
+{
+    double sum = 0.0;
+    for (int i = 0; i < buf.getNumSamples(); ++i)
+        sum += (double)buf.getSample(ch, i) * buf.getSample(ch, i);
+    return (float)std::sqrt(sum / buf.getNumSamples());
+}
 
 TEST_CASE("DrumSmash - audio processing", "[drum_smash]")
 {
@@ -200,6 +229,74 @@ TEST_CASE("DrumSmash - audio processing", "[drum_smash]")
         }
     }
 
+    SECTION("LPF attenuates both channels equally")
+    {
+        setCleanChain(proc.apvts);
+        setParam(proc.apvts, "lpfCutoff", 200.f);
+
+        float rmsL = 0.f, rmsR = 0.f;
+        for (int block = 0; block < 20; ++block)
+        {
+            juce::AudioBuffer<float> buf(2, 512);
+            fillWithSine(buf, 5000.f, 44100.0, 0.5f);
+            proc.processBlock(buf, midi);
+            rmsL = channelRms(buf, 0);
+            rmsR = channelRms(buf, 1);
+        }
+        const float inRms = 0.5f / std::sqrt(2.f);
+        REQUIRE(rmsL < inRms * 0.1f);
+        REQUIRE(rmsR < inRms * 0.1f);
+        REQUIRE(rmsR == Catch::Approx(rmsL).epsilon(0.01));
+    }
+
+    SECTION("transient boost leaves a steady tone at unity gain")
+    {
+        setCleanChain(proc.apvts);
+        auto steadyRms = [&] (float boost)
+        {
+            setParam(proc.apvts, "transientBoost", boost);
+            proc.prepareToPlay(44100.0, 512);
+            float rms = 0.f;
+            for (int block = 0; block < 40; ++block)
+            {
+                juce::AudioBuffer<float> buf(2, 512);
+                fillWithSine(buf, 441.f, 44100.0, 0.3f);   // whole cycles per block
+                proc.processBlock(buf, midi);
+                rms = rmsOf(buf);
+            }
+            return rms;
+        };
+        REQUIRE(steadyRms(1.f) == Catch::Approx(steadyRms(0.f)).epsilon(0.05));
+    }
+
+    SECTION("pitch +12 semitones doubles the frequency")
+    {
+        setCleanChain(proc.apvts);
+        setParam(proc.apvts, "pitchSemitones", 12.f);
+        proc.prepareToPlay(44100.0, 512);
+
+        int crossings = 0;
+        float prev = 0.f;
+        for (int block = 0; block < 60; ++block)
+        {
+            juce::AudioBuffer<float> buf(2, 512);
+            for (int ch = 0; ch < 2; ++ch)
+                for (int i = 0; i < 512; ++i)
+                    buf.setSample(ch, i, 0.3f * std::sin(juce::MathConstants<float>::twoPi * 220.f
+                                                         * (float)(block * 512 + i) / 44100.f));
+            proc.processBlock(buf, midi);
+            if (block < 20) continue;   // settle
+            for (int i = 0; i < 512; ++i)
+            {
+                const float x = buf.getSample(0, i);
+                if (prev < 0.f && x >= 0.f) ++crossings;
+                prev = x;
+            }
+        }
+        const float seconds = 40.f * 512.f / 44100.f;
+        REQUIRE(crossings / seconds == Catch::Approx(440.f).epsilon(0.05));
+    }
+
     SECTION("extreme parameter values do not crash")
     {
         for (auto drive  : { 0.f, 1.f })
@@ -238,5 +335,20 @@ TEST_CASE("DrumSmash - state management", "[drum_smash]")
         REQUIRE(getParam(proc.apvts, "bitDepth")   == Catch::Approx(4.f).margin(0.1f));
         REQUIRE(getParam(proc.apvts, "drive")      == Catch::Approx(0.6f).margin(0.01f));
         REQUIRE(getParam(proc.apvts, "noiseAmount")== Catch::Approx(0.3f).margin(0.01f));
+    }
+
+    SECTION("prepareToPlay keeps user and restored parameter values")
+    {
+        DrumSmashProcessor proc;
+        setParam(proc.apvts, "drive", 0.77f);
+        proc.prepareToPlay(44100.0, 512);
+        REQUIRE(getParam(proc.apvts, "drive") == Catch::Approx(0.77f).margin(0.01f));
+
+        juce::MemoryBlock stateData;
+        proc.getStateInformation(stateData);
+        DrumSmashProcessor restored;
+        restored.setStateInformation(stateData.getData(), (int)stateData.getSize());
+        restored.prepareToPlay(48000.0, 256);
+        REQUIRE(getParam(restored.apvts, "drive") == Catch::Approx(0.77f).margin(0.01f));
     }
 }

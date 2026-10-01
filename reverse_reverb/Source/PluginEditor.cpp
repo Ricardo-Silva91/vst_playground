@@ -91,6 +91,8 @@ void ReverseReverbAudioProcessorEditor::mouseDown(const juce::MouseEvent& e)
         draggingKnob = k;
         dragStartY   = e.position.y;
         dragStartVal = (k == 0) ? normRoom() : (k == 1) ? normWet() : normWindow();
+        const char* ids[] = { "roomSize", "wetMix", "windowMs" };
+        if (auto* p = audioProcessor.apvts.getParameter(ids[k])) p->beginChangeGesture();
     }
 }
 void ReverseReverbAudioProcessorEditor::mouseDrag(const juce::MouseEvent& e)
@@ -100,7 +102,13 @@ void ReverseReverbAudioProcessorEditor::mouseDrag(const juce::MouseEvent& e)
     setNorm(draggingKnob, dragStartVal + delta);
     repaint();
 }
-void ReverseReverbAudioProcessorEditor::mouseUp(const juce::MouseEvent&) { draggingKnob = -1; }
+void ReverseReverbAudioProcessorEditor::mouseUp(const juce::MouseEvent&)
+{
+    const char* ids[] = { "roomSize", "wetMix", "windowMs" };
+    if (draggingKnob >= 0)
+        if (auto* p = audioProcessor.apvts.getParameter(ids[draggingKnob])) p->endChangeGesture();
+    draggingKnob = -1;
+}
 
 void ReverseReverbAudioProcessorEditor::mouseDoubleClick(const juce::MouseEvent& e)
 {
@@ -120,7 +128,7 @@ void ReverseReverbAudioProcessorEditor::mouseDoubleClick(const juce::MouseEvent&
         if (result == 1)
         {
             float v = box->getTextEditorContents("val").getFloatValue();
-            param->setValueNotifyingHost(param->convertTo0to1(
+            SharedEditorUtils::setParamAsGesture(param, param->convertTo0to1(
                 juce::jlimit(param->getNormalisableRange().start,
                              param->getNormalisableRange().end, v)));
         }

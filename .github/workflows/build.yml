@@ -31,58 +31,64 @@ permissions:
   contents: write
 
 jobs:
-  # ── Detect which VST to build from commit message scope ──────────────────
+  # ── Detect which VSTs to build ───────────────────────────────────────────
+  # Push: every plugin whose folder changed in the push (all of them when
+  # shared/ or the JUCE submodule changed). Markdown-only changes don't build.
+  # Manual: the plugin and platforms picked in the form.
   detect:
     runs-on: ubuntu-latest
     outputs:
-      vst_name: ${{ steps.parse.outputs.vst_name }}
-      should_build: ${{ steps.parse.outputs.should_build }}
+      plugins: ${{ steps.parse.outputs.plugins }}
       build_mac: ${{ steps.parse.outputs.build_mac }}
       build_windows: ${{ steps.parse.outputs.build_windows }}
     steps:
-      - name: Parse commit scope or use manual input
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Find plugins to build
         id: parse
+        env:
+          EVENT: ${{ github.event_name }}
+          VST: ${{ github.event.inputs.vst_name }}
+          PLATFORMS: ${{ github.event.inputs.platforms }}
+          BEFORE: ${{ github.event.before }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            VST="${{ github.event.inputs.vst_name }}"
-            PLATFORMS="${{ github.event.inputs.platforms }}"
-            echo "vst_name=$VST" >> $GITHUB_OUTPUT
-            echo "should_build=true" >> $GITHUB_OUTPUT
-            echo "Manual trigger: building '$VST' for '$PLATFORMS'"
-            if [[ "$PLATFORMS" == "mac" ]]; then
-              echo "build_mac=true"     >> $GITHUB_OUTPUT
-              echo "build_windows=false" >> $GITHUB_OUTPUT
-            elif [[ "$PLATFORMS" == "windows" ]]; then
-              echo "build_mac=false"    >> $GITHUB_OUTPUT
-              echo "build_windows=true" >> $GITHUB_OUTPUT
-            else
-              echo "build_mac=true"    >> $GITHUB_OUTPUT
-              echo "build_windows=true" >> $GITHUB_OUTPUT
-            fi
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            PLUGINS="$VST"
+            [[ "$PLATFORMS" == *mac* ]]     && MAC=true || MAC=false
+            [[ "$PLATFORMS" == *windows* ]] && WIN=true || WIN=false
           else
-            MSG="${{ github.event.head_commit.message }}"
-            echo "Commit message: $MSG"
-            if [[ "$MSG" =~ ^[a-zA-Z0-9_]+\(([a-zA-Z0-9_]+)\): ]]; then
-              VST="${BASH_REMATCH[1]}"
-              echo "vst_name=$VST" >> $GITHUB_OUTPUT
-              echo "should_build=true" >> $GITHUB_OUTPUT
-              echo "Detected scope: '$VST' — building mac+windows"
-              # Push commits now build both platforms
-              echo "build_mac=true"    >> $GITHUB_OUTPUT
-              echo "build_windows=true" >> $GITHUB_OUTPUT
+            MAC=true
+            WIN=true
+            ALL=$(for d in */Source/PluginProcessor.cpp; do echo "${d%%/*}"; done)
+            if git cat-file -e "$BEFORE" 2>/dev/null; then
+              CHANGED=$(git diff --name-only "$BEFORE" "$GITHUB_SHA" | grep -v '\.md$' || true)
             else
-              echo "vst_name=" >> $GITHUB_OUTPUT
-              echo "should_build=false" >> $GITHUB_OUTPUT
-              echo "build_mac=false"    >> $GITHUB_OUTPUT
-              echo "build_windows=false" >> $GITHUB_OUTPUT
-              echo "No scope found — skipping build."
+              echo "Previous commit $BEFORE not available — building everything"
+              CHANGED="shared/"
+            fi
+            echo "Changed files:"; echo "$CHANGED"
+            if echo "$CHANGED" | grep -qE '^(shared/|JUCE$)'; then
+              PLUGINS="$ALL"
+            else
+              PLUGINS=$(for p in $ALL; do echo "$CHANGED" | grep -q "^$p/" && echo "$p"; done)
             fi
           fi
+          JSON=$(printf '%s\n' $PLUGINS | jq -R . | jq -sc 'map(select(length > 0))')
+          echo "Building: $JSON (mac=$MAC, windows=$WIN)"
+          echo "plugins=$JSON"     >> $GITHUB_OUTPUT
+          echo "build_mac=$MAC"    >> $GITHUB_OUTPUT
+          echo "build_windows=$WIN" >> $GITHUB_OUTPUT
 
   # ── Windows build ─────────────────────────────────────────────────────────
   build-windows:
     needs: detect
-    if: needs.detect.outputs.should_build == 'true' && needs.detect.outputs.build_windows == 'true'
+    if: needs.detect.outputs.plugins != '[]' && needs.detect.outputs.build_windows == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        vst: ${{ fromJSON(needs.detect.outputs.plugins) }}
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -90,15 +96,15 @@ jobs:
           submodules: recursive
 
       - name: Configure CMake
-        working-directory: ${{ needs.detect.outputs.vst_name }}
+        working-directory: ${{ matrix.vst }}
         run: cmake -B build -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
-        working-directory: ${{ needs.detect.outputs.vst_name }}
+        working-directory: ${{ matrix.vst }}
         run: cmake --build build --config Release
 
       - name: Zip VST3 bundle (Windows)
-        working-directory: ${{ needs.detect.outputs.vst_name }}
+        working-directory: ${{ matrix.vst }}
         shell: bash
         run: |
           cd build
@@ -110,13 +116,17 @@ jobs:
       - name: Upload VST3 artifact (Windows)
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ needs.detect.outputs.vst_name }}-VST3-Windows
-          path: ${{ needs.detect.outputs.vst_name }}/build/*_Windows.zip
+          name: ${{ matrix.vst }}-VST3-Windows
+          path: ${{ matrix.vst }}/build/*_Windows.zip
 
   # ── macOS build ───────────────────────────────────────────────────────────
   build-mac:
     needs: detect
-    if: needs.detect.outputs.should_build == 'true' && needs.detect.outputs.build_mac == 'true'
+    if: needs.detect.outputs.plugins != '[]' && needs.detect.outputs.build_mac == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        vst: ${{ fromJSON(needs.detect.outputs.plugins) }}
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -124,15 +134,15 @@ jobs:
           submodules: recursive
 
       - name: Configure CMake
-        working-directory: ${{ needs.detect.outputs.vst_name }}
+        working-directory: ${{ matrix.vst }}
         run: cmake -B build -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
-        working-directory: ${{ needs.detect.outputs.vst_name }}
+        working-directory: ${{ matrix.vst }}
         run: cmake --build build --config Release
 
       - name: Zip VST3 bundle (preserve macOS bundle structure)
-        working-directory: ${{ needs.detect.outputs.vst_name }}
+        working-directory: ${{ matrix.vst }}
         run: |
           cd build
           VST3_PATH=$(find . -name "*.vst3" -type d | head -n 1)
@@ -142,32 +152,36 @@ jobs:
       - name: Upload VST3 artifact (Mac)
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ needs.detect.outputs.vst_name }}-VST3-Mac
-          path: ${{ needs.detect.outputs.vst_name }}/build/*_Mac.zip
+          name: ${{ matrix.vst }}-VST3-Mac
+          path: ${{ matrix.vst }}/build/*_Mac.zip
 
   # ── Publish release ───────────────────────────────────────────────────────
   publish:
     needs: [detect, build-mac, build-windows]
-    # Run if should_build and at least one build job actually succeeded
-    if: |
-      always() &&
-      needs.detect.outputs.should_build == 'true' &&
-      (needs.build-mac.result == 'success' || needs.build-windows.result == 'success')
+    # One release per plugin, from whichever of its platform builds succeeded
+    if: always() && !cancelled() && needs.detect.result == 'success' && needs.detect.outputs.plugins != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        vst: ${{ fromJSON(needs.detect.outputs.plugins) }}
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts for this VST
         uses: actions/download-artifact@v4
         with:
-          pattern: ${{ needs.detect.outputs.vst_name }}-VST3-*
+          pattern: ${{ matrix.vst }}-VST3-*
           path: release-assets
           merge-multiple: true
+
+      - name: Check a build succeeded
+        run: ls release-assets/*.zip
 
       - name: Publish rolling release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ needs.detect.outputs.vst_name }}-latest
-          name: "${{ needs.detect.outputs.vst_name }} (latest)"
-          body: "Latest automated build of **${{ needs.detect.outputs.vst_name }}**."
+          tag_name: ${{ matrix.vst }}-latest
+          name: "${{ matrix.vst }} (latest)"
+          body: "Latest automated build of **${{ matrix.vst }}**."
           prerelease: false
           files: release-assets/*
         env:

@@ -103,8 +103,7 @@ TEST_CASE("PitchWobble - audio processing", "[pitch_wobble]")
     {
         setParam(proc.apvts, "depth", 0.0f);
 
-        // Prime the circular buffer: readPos starts 1 ahead of writePos and reads
-        // zeros until it wraps the full 65536-sample buffer (128 blocks × 512 samples)
+        // Prime past the reported latency so the delayed signal has arrived
         for (int i = 0; i < 130; ++i)
         {
             juce::AudioBuffer<float> warm(2, 512);
@@ -128,7 +127,7 @@ TEST_CASE("PitchWobble - audio processing", "[pitch_wobble]")
         setParam(proc.apvts, "rate",   5.f);
         setParam(proc.apvts, "smooth", 0.1f);
 
-        // Prime so the effect is in steady state (128 blocks to fill the 65536-sample buffer)
+        // Prime past the reported latency so the effect is in steady state
         for (int i = 0; i < 130; ++i)
         {
             juce::AudioBuffer<float> warm(2, 512);
@@ -156,6 +155,44 @@ TEST_CASE("PitchWobble - audio processing", "[pitch_wobble]")
             fillWithSine(buf, 440.f, 44100.0);
             proc.processBlock(buf, midi);
             REQUIRE(allFinite(buf));
+        }
+    }
+
+    SECTION("depth=0 delays by exactly the reported latency")
+    {
+        setParam(proc.apvts, "depth", 0.0f);
+        proc.prepareToPlay(44100.0, 512);
+
+        const int latency = proc.getLatencySamples();
+        REQUIRE(latency > 0);
+        REQUIRE(latency < 44100);   // well under a second
+
+        int impulseAt = -1;
+        for (int block = 0; block * 512 < latency + 1024 && impulseAt < 0; ++block)
+        {
+            auto buf = makeSilent(2, 512);
+            if (block == 0) { buf.setSample(0, 0, 1.f); buf.setSample(1, 0, 1.f); }
+            proc.processBlock(buf, midi);
+            for (int i = 0; i < 512; ++i)
+                if (std::abs(buf.getSample(0, i)) > 0.5f) { impulseAt = block * 512 + i; break; }
+        }
+        REQUIRE(impulseAt == latency);
+    }
+
+    SECTION("read head stays bounded with max depth at the slowest rate")
+    {
+        setParam(proc.apvts, "depth",  30.f);
+        setParam(proc.apvts, "rate",   0.1f);
+        setParam(proc.apvts, "smooth", 0.f);
+
+        // 60 s of audio: the output must keep tracking the input (no dropouts)
+        for (int block = 0; block < (60 * 44100) / 512; ++block)
+        {
+            juce::AudioBuffer<float> buf(2, 512);
+            fillWithSine(buf, 440.f, 44100.0, 0.5f);
+            proc.processBlock(buf, midi);
+            if (block > 40)
+                REQUIRE(rmsOf(buf) > 0.2f);
         }
     }
 

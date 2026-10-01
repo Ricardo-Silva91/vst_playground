@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Drum Smash — Lizard VST</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="shared.css">
+  <link rel="icon" type="image/x-icon" href="assets/favicon-32.png">
+  <style>
+    :root { --accent: #e83a2a; --accent-rgb: 232,58,42; }
+    .hero-face .knob { background: radial-gradient(circle at 35% 30%, #3a1a14 0%, #200e0a 45%, #0a0504 100%); }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <nav class="nav">
+    <a href="index.html">&#8592; All Plugins</a>
+    <span class="sep">/</span>
+    <span>Drum Smash</span>
+  </nav>
+
+  <div class="hero">
+    <div class="screw tl"></div><div class="screw tr"></div>
+    <div class="screw bl"></div><div class="screw br"></div>
+    <div class="hero-inner">
+      <div class="hero-face">
+        <span class="hero-num">MODULE 04 / 04</span>
+        <div class="hero-title">Drum<br>Smash</div>
+        <div class="knob-row">
+          <div class="knob-unit"><div class="knob" style="transform:rotate(70deg)"></div><span class="knob-label">Drive</span></div>
+          <div class="knob-unit"><div class="knob" style="transform:rotate(30deg)"></div><span class="knob-label">Crush</span></div>
+          <div class="knob-unit"><div class="knob" style="transform:rotate(-20deg)"></div><span class="knob-label">Noise</span></div>
+          <div class="knob-unit"><div class="knob" style="transform:rotate(50deg)"></div><span class="knob-label">Comp</span></div>
+          <div class="knob-unit"><div class="knob" style="transform:rotate(10deg)"></div><span class="knob-label">Verb</span></div>
+        </div>
+        <div class="hero-cat">
+          <div class="cat-dot" style="background:var(--led-red);box-shadow:0 0 5px rgba(232,58,42,0.9);"></div>
+          Drum Processor
+        </div>
+        <img src="assets/logo.png" alt="Lizard VST" class="hero-logo">
+      </div>
+      <div class="hero-body">
+        <div class="hero-tagline">Everything a drum hit needs to become itself.</div>
+        <p class="hero-desc">
+          Drum Smash runs your drums through a full destruction chain: bit crushing, saturation, vinyl noise and crackle, compression, reverb, pitch and wow flutter, and stereo shaping. <strong>Five knobs cover the essentials. All 21 parameters are accessible via your DAW's generic editor.</strong> Eight presets cover the moods.
+        </p>
+        <div class="hero-dl">
+          <a class="dl-btn mac" href="https://github.com/Ricardo-Silva91/vst_playground/releases/download/drum_smash-latest/Drum_Smash.vst3_Mac.zip">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 1 0 20A10 10 0 0 1 12 2z"/><path d="M12 8v8M8 14l4 4 4-4"/></svg>macOS
+          </a>
+          <a class="dl-btn win" href="https://github.com/Ricardo-Silva91/vst_playground/releases/download/drum_smash-latest/Drum_Smash.vst3_Windows.zip">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8"/><rect x="13" y="3" width="8" height="8"/><rect x="3" y="13" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/></svg>Windows
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FRONT PANEL KNOBS -->
+  <div class="content-grid wide">
+    <div class="panel">
+      <div class="panel-title">Front Panel Knobs</div>
+      <div class="sections-grid">
+        <div class="section-card">
+          <div class="section-name">Drive</div>
+          <div class="section-params">Saturation drive &nbsp; 0 – 1</div>
+          <p class="section-desc">Pushes harmonic distortion from subtle warmth to full clip. Drag vertically. Hold <strong>Shift</strong> for fine control. Double-click to type a value.</p>
+        </div>
+        <div class="section-card">
+          <div class="section-name">Crush</div>
+          <div class="section-params">Bit depth &nbsp; 1 – 16 bit</div>
+          <p class="section-desc">Reduces word length. <strong>16 = clean, 1 = full destruction.</strong> Aliasing artifacts become part of the texture at lower settings.</p>
+        </div>
+        <div class="section-card">
+          <div class="section-name">Noise</div>
+          <div class="section-params">Vinyl noise amount &nbsp; 0 – 1</div>
+          <p class="section-desc">Adds broadband hiss <strong>gated to input signal</strong> — only fires when a drum is playing, never bleeds into silence between hits.</p>
+        </div>
+        <div class="section-card">
+          <div class="section-name">Comp</div>
+          <div class="section-params">Compressor threshold &nbsp; &minus;60 – 0 dBFS</div>
+          <p class="section-desc">Lowers threshold to bring in more compression. <strong>Combines with the full compressor section</strong> (ratio, attack, release, makeup) accessible in the generic editor.</p>
+        </div>
+        <div class="section-card">
+          <div class="section-name">Verb</div>
+          <div class="section-params">Reverb room size &nbsp; 0 – 1</div>
+          <p class="section-desc">Room size of the reverb tail — placed at the end of the chain so it <strong>reverberates the already-destroyed signal</strong>, not the clean original.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIGNAL CHAIN -->
+  <div class="content-grid wide">
+    <div class="panel">
+      <div class="panel-title">Signal Chain</div>
+      <div class="chain">
+        <span class="chain-node highlight">Pitch / Wow</span><span class="chain-arrow">&#8250;</span>
+        <span class="chain-node highlight">Bit Crusher</span><span class="chain-arrow">&#8250;</span>
+        <span class="chain-node highlight">Saturation</span><span class="chain-arrow">&#8250;</span>
+        <span class="chain-node highlight">Noise / Crackle</span><span class="chain-arrow">&#8250;</span>
+        <span class="chain-node highlight">Transient</span><span class="chain-arrow">&#8250;</span>
+        <span class="chain-node highlight">HPF</span><span class="chain-arrow">&#8250;</span>
+        <span class="chain-node highlight">LPF</span><span class="chain-arrow">&#8250;</span>
+        <span class="chain-node highlight">Compressor</span><span class="chain-arrow">&#8250;</span>
+        <span class="chain-node highlight">Reverb</span><span class="chain-arrow">&#8250;</span>
+        <span class="chain-node highlight">Stereo Width</span><span class="chain-arrow">&#8250;</span>
+        <span class="chain-node highlight">Output Gain</span>
+      </div>
+      <p class="chain-note">
+        Every stage is always active — presets and manual parameter edits dial the amounts. The chain is ordered destructively first (pitch, crush, saturate, noise) then restorative (filter, compress, spatial). Character is printed before any cleanup happens. Noise and crackle are gated by input signal level and won't fire during silence between hits.
+      </p>
+    </div>
+  </div>
+
+  <!-- 8 SECTIONS -->
+  <div class="content-grid wide">
+    <div class="panel">
+      <div class="panel-title">Processing Sections (21 Parameters Total)</div>
+      <div class="sections-grid">
+        <div class="section-card">
+          <div class="section-name">Crusher</div>
+          <div class="section-params">Bit Depth (1–16 bit) / SR Divide (1–32&times;)</div>
+          <p class="section-desc">Reduces bit depth and sample rate to introduce <strong>digital grit and aliasing</strong>. Subtle crushing adds texture without obvious lo-fi. Extreme values produce classic 12-bit drum machine crunch.</p>
+        </div>
+        <div class="section-card">
+          <div class="section-name">Saturation</div>
+          <div class="section-params">Drive (0–1) / Output Gain (0–2&times;)</div>
+          <p class="section-desc">Harmonic distortion with different flavors: soft-clip roundness, tape-style even harmonics, or harder asymmetric clipping. <strong>Output Gain compensates for saturation-induced level increases.</strong></p>
+        </div>
+        <div class="section-card">
+          <div class="section-name">Character</div>
+          <div class="section-params">Noise Amount (0–1) / Crackle Rate (0–1)</div>
+          <p class="section-desc">Broadband noise and random crackle <strong>gated to the drum signal</strong>. Noise adds air; Crackle adds vinyl intimacy. Neither fires during silence.</p>
+        </div>
+        <div class="section-card">
+          <div class="section-name">Filters</div>
+          <div class="section-params">HPF (20–2000 Hz) / LPF (200–22000 Hz)</div>
+          <p class="section-desc">Placed after the destructive processing. <strong>HPF removes mud</strong> from saturation and low-frequency noise. LPF rolls off harshness from bit crushing. Use both to carve the character into shape.</p>
+        </div>
+        <div class="section-card">
+          <div class="section-name">Compressor</div>
+          <div class="section-params">Threshold / Ratio (1–20:1) / Attack (0.1–200 ms) / Release (10–2000 ms) / Makeup (0–24 dB)</div>
+          <p class="section-desc">Post-distortion compression. <strong>Fast attack kills the transient</strong> for a smashed sound. Slow attack lets the click through then ducks the body. Acts on already-destroyed audio, compounding the effect.</p>
+        </div>
+        <div class="section-card">
+          <div class="section-name">Reverb</div>
+          <div class="section-params">Room Size (0–1) / Wet Mix (0–1) / Damping (0–1)</div>
+          <p class="section-desc">Room reverb placed at the end of the destructive chain. The tail <strong>carries all the noise, grit, and saturation</strong> of the processed hit — the room sounds damaged, not pristine.</p>
+        </div>
+        <div class="section-card">
+          <div class="section-name">Modulation</div>
+          <div class="section-params">Pitch Shift (&minus;12–+12 st) / Wow Rate (0–8 Hz) / Wow Depth (0–50 cents)</div>
+          <p class="section-desc">Pitch shift transposes the entire hit. Wow is a slow sine LFO bending the pitch up and down like an off-centre record. <strong>Pitch down adds weight</strong>; combined with wow it produces unstable tape with a failing capstan.</p>
+        </div>
+        <div class="section-card">
+          <div class="section-name">Spatial</div>
+          <div class="section-params">Stereo Width (0–2) / Transient Boost (0–1)</div>
+          <p class="section-desc">Stereo Width widens the processed signal on the mid-side axis (1.0 = original). Transient Boost reinforces the initial click. There is no dry/wet control — for parallel processing, put the plugin on a send or a duplicate bus.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRESETS -->
+  <div class="content-grid wide">
+    <div class="panel">
+      <div class="panel-title">Factory Presets</div>
+      <div class="preset-grid">
+        <div class="preset-card">
+          <div class="preset-name">Dusty Vinyl</div>
+          <p class="preset-desc">Warm LPF rolloff, light crackle, gentle wow flutter. Like a worn 45 — sampled, not produced.</p>
+        </div>
+        <div class="preset-card">
+          <div class="preset-name">Heavy Hitter</div>
+          <p class="preset-desc">Hard saturation, aggressive 8:1 compression, strong transient boost. Modern trap and hip-hop impact.</p>
+        </div>
+        <div class="preset-card">
+          <div class="preset-name">Bit Crusher</div>
+          <p class="preset-desc">4-bit depth, 8&times; sample rate reduction. Full lo-fi digital grit — aliasing becomes part of the texture.</p>
+        </div>
+        <div class="preset-card">
+          <div class="preset-name">Lo-Fi Radio</div>
+          <p class="preset-desc">10-bit, narrow HPF/LPF band, flutter. AM radio through a cassette deck.</p>
+        </div>
+        <div class="preset-card">
+          <div class="preset-name">Punchy Club</div>
+          <p class="preset-desc">Fast comp, wide stereo image, light reverb, surgical HPF. Clean but huge — maximum impact density.</p>
+        </div>
+        <div class="preset-card">
+          <div class="preset-name">Tape Warped</div>
+          <p class="preset-desc">14-bit with wow flutter and tape saturation. Degraded reel-to-reel with a failing capstan motor.</p>
+        </div>
+        <div class="preset-card">
+          <div class="preset-name">Nuclear Snare</div>
+          <p class="preset-desc">15:1 compression, full drive, max transient boost. The snare explodes — roomy, saturated, relentless.</p>
+        </div>
+        <div class="preset-card">
+          <div class="preset-name">Bedroom Boom-Bap</div>
+          <p class="preset-desc">12-bit, vinyl noise, slight pitch-down, narrow stereo. SP-404 vibes. Sits perfectly under dusty piano and bass.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- USE CASES -->
+  <div class="content-grid wide">
+    <div class="panel">
+      <div class="panel-title">Use Cases</div>
+      <div class="usecase-list">
+        <div class="usecase-card">
+          <div class="usecase-title">Parallel drum bus processing</div>
+          <p class="usecase-body">Send your drum bus to a parallel bus with Drum Smash on it and blend it in at 50–70%. The plugin adds character and glue without replacing the original. <strong>Saturation on the bus compresses peaks psychoacoustically</strong>, making the kit feel more cohesive in the mix.</p>
+          <div class="usecase-settings">Preset: Heavy Hitter as starting point, back off the parallel bus to taste</div>
+        </div>
+        <div class="usecase-card">
+          <div class="usecase-title">Resample and destroy a loop</div>
+          <p class="usecase-body">Feed a clean loop through fully wet and print the output as a new audio file. <strong>The processed version becomes your lo-fi source</strong>, ready to layer under the original or use standalone. Bit Crusher and Tape Warped presets work especially well.</p>
+          <div class="usecase-settings">Any preset &rarr; print / export the result</div>
+        </div>
+        <div class="usecase-card">
+          <div class="usecase-title">Single hit sculpting</div>
+          <p class="usecase-body">Use on an individual kick, snare, or hi-hat in a sampler. Each section lets you shape the exact character: <strong>HPF to remove flub, saturation to add body, compressor to control transient shape, reverb to place it in a space</strong>.</p>
+          <div class="usecase-settings">Start with filters and compressor before engaging the Crusher or Saturation</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TIPS -->
+  <div class="content-grid wide">
+    <div class="panel">
+      <div class="panel-title">Tips and Workflow</div>
+      <div class="tip-list">
+        <div class="tip">
+          <span class="tip-icon">&#9654;</span>
+          <p class="tip-text"><strong>The chain order is your friend.</strong> Because destruction happens before cleanup, you can push saturation and bit crush hard and then use HPF and LPF to carve out the unusable frequencies. The filters don't undo the distortion — they shape it.</p>
+        </div>
+        <div class="tip">
+          <span class="tip-icon">&#9654;</span>
+          <p class="tip-text"><strong>Noise and crackle are gated.</strong> They only appear when the drum signal is above threshold. Push them fairly high without worrying about noise bleeding into silence between hits.</p>
+        </div>
+        <div class="tip">
+          <span class="tip-icon">&#9654;</span>
+          <p class="tip-text"><strong>Slow compressor attack for punch, fast for smash.</strong> A slow attack (30–80 ms) preserves the transient click then ducks the body. A fast attack (1–5 ms) clamps the whole hit, creating a flat, heavily processed smash. Both are useful and produce completely different results.</p>
+        </div>
+        <div class="tip">
+          <span class="tip-icon">&#9654;</span>
+          <p class="tip-text"><strong>Pitch shift down for weight.</strong> Even &minus;1 or &minus;2 semitones makes a kick drum sound significantly bigger. Combined with saturation, the increased fundamental pushes more energy into the low midrange where most speakers reproduce bass.</p>
+        </div>
+        <div class="tip">
+          <span class="tip-icon">&#9654;</span>
+          <p class="tip-text"><strong>FL Studio automation tip.</strong> Right-click the parameter <em>name label</em> (not the slider) in the generic editor to get "Create automation clip." This applies to all 21 parameters.</p>
+        </div>
+        <div class="tip">
+          <span class="tip-icon">&#9654;</span>
+          <p class="tip-text"><strong>Reverb on destroyed audio is its own thing.</strong> Because reverb is post-destruction in the chain, the tail decays through all the noise and grit. This gives it an intimate, room-mic quality rather than a pristine space.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="screw tl"></div><div class="screw tr"></div>
+    <span class="footer-text">Lizard VST &nbsp;&#183;&nbsp; Free VST3 &nbsp;&#183;&nbsp; macOS &amp; Windows</span>
+    <a class="footer-link" href="https://mrgloomy.bandcamp.com/" target="_blank">&#9829; Support the project — buy my music on Bandcamp</a>
+    <a class="footer-link" href="https://github.com/Ricardo-Silva91/vst_playground" target="_blank">&#8599; See on GitHub</a>
+  </footer>
+
+</div>
+</body>
+</html>

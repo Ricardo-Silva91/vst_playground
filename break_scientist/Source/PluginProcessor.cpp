@@ -18,6 +18,9 @@ BreakScientistProcessor::BreakScientistProcessor()
           .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
       apvts (*this, nullptr, "Parameters", createParameterLayout())
 {
+    // Start on the first preset; prepareToPlay must not re-apply it, or it
+    // would overwrite restored session state and the user's own edits.
+    applyPreset (0);
 }
 
 BreakScientistProcessor::~BreakScientistProcessor() {}
@@ -68,6 +71,7 @@ void BreakScientistProcessor::prepareToPlay (double sampleRate, int /*samplesPer
 
     ringWritePos = 0;
     ringReadPos  = ringSize - lookaheadSamples;
+    numPendingHits = 0;
 
     envelope        = 0.f;
     rmsSmooth       = 0.f;
@@ -84,7 +88,6 @@ void BreakScientistProcessor::prepareToPlay (double sampleRate, int /*samplesPer
     ioiEstimate      = 0.0;
     ioiCount         = 0;
 
-    applyPreset (currentPreset);
 }
 
 void BreakScientistProcessor::releaseResources() {}
@@ -135,6 +138,15 @@ void BreakScientistProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 
     const int hitWindowSamples  = (int)(kHitWindowSec    * currentSampleRate);
     const int peakScanSamples   = (int)(kPeakScanSec     * currentSampleRate);
+    const int fadeInSamples     = (int)(0.005 * currentSampleRate);  // 5ms fade in
+    const int holdSamples       = (int)(0.010 * currentSampleRate);  // 10ms hold at peak
+    const int fadeOutSamples    = hitWindowSamples - fadeInSamples - holdSamples;
+
+    // A hit is placed (peakScan + hitWindow) samples after its onset was
+    // written; its copy must land between the read head and the write head
+    const int placeDelay = peakScanSamples + hitWindowSamples;
+    const int minOffset  = -(lookaheadSamples - placeDelay - fadeInSamples);
+    const int maxOffset  = ringSize - lookaheadSamples + fadeInSamples - 1;
     const float* inL  = buffer.getReadPointer (0);
     const float* inR  = (numChannels > 1) ? buffer.getReadPointer (1) : inL;
     float*       outL = buffer.getWritePointer (0);
@@ -170,107 +182,12 @@ void BreakScientistProcessor::processBlock (juce::AudioBuffer<float>& buffer,
             inTransient     = true;
             cooldownSamples = (int)(0.050 * currentSampleRate);
 
-            // ── 4. Find true peak within next peakScanSamples ─────────────────
-            // We have the full future in our ring buffer — scan forward to find
-            // where the hit actually peaks. This anchors the Hann window at the
-            // real attack transient, not just where energy started rising.
-            int   peakOffset = 0;
-            float peakVal    = 0.f;
-            for (int s = 0; s < peakScanSamples; ++s)
-            {
-                const int scanPos = (ringWritePos + s) % ringSize;
-                const float v = std::max (std::fabs (ringInL[scanPos]),
-                                          std::fabs (ringInR[scanPos]));
-                if (v > peakVal) { peakVal = v; peakOffset = s; }
-            }
-
-            // Onset anchor = ringWritePos + peakOffset
-            const int onsetPos = (ringWritePos + peakOffset) % ringSize;
-
-            // ── 5. Calculate displacement ─────────────────────────────────────
-            const bool isOddSixteenth = (sixteenthCount % 2) == 1;
-            const int  swingOffset    = isOddSixteenth ? swingDelaySamples : 0;
-
-            int humanizeOffset = 0;
-            if (maxHumanizeSamples > 0)
-                humanizeOffset = rng.nextInt (maxHumanizeSamples * 2) - maxHumanizeSamples;
-
-            const int rawOffset   = dragSamples + swingOffset + humanizeOffset;
-            const int totalOffset = juce::jlimit (-(lookaheadSamples - hitWindowSamples),
-                                                    lookaheadSamples - hitWindowSamples,
-                                                    rawOffset);
-
-            // Velocity variance
-            float gainScale = 1.f;
-            if (velocityVar > 0.f)
-            {
-                const float lo = 1.f - velocityVar * 0.5f;
-                const float hi = 1.f + velocityVar * 0.3f;
-                gainScale = lo + rng.nextFloat() * (hi - lo);
-            }
-
-            // ── 6 & 7. Suppress original + copy to displaced position ────────
-            //
-            // The mask and the output copy use the SAME envelope shape.
-            // At every sample position w within the hit window:
-            //   - original contribution  = passthrough × (1 - env)
-            //   - displaced contribution = copy        ×  env
-            //
-            // When env=0 the original plays untouched.
-            // When env=1 the original is fully suppressed and only the copy plays.
-            // At every point in between they crossfade smoothly.
-            //
-            // This means there are no discontinuities anywhere — the total
-            // signal is always a continuous blend, never a hard cut.
-            //
-            // Envelope shape: asymmetric cosine
-            //   - Fade-in  over fadeInSamples  (10% of window, before the peak)
-            //   - Hold at 1.0 for holdSamples  (the attack itself, always full)
-            //   - Fade-out over fadeOutSamples (remaining window, after the peak)
-            //
-            // The hold region ensures the transient punch is never attenuated
-            // by a ramp — it fires at full gain in both the copy and the mask.
-
-            const int readSideOnset = (onsetPos - lookaheadSamples + ringSize) % ringSize;
-            const int destStart     = (readSideOnset + totalOffset + ringSize) % ringSize;
-
-            const int fadeInSamples  = (int)(0.005 * currentSampleRate);  // 5ms fade in
-            const int holdSamples    = (int)(0.010 * currentSampleRate);  // 10ms hold at peak
-            const int fadeOutSamples = hitWindowSamples - fadeInSamples - holdSamples;
-
-            for (int w = 0; w < hitWindowSamples; ++w)
-            {
-                float env;
-                if (w < fadeInSamples)
-                {
-                    // Cosine ramp up: 0 → 1
-                    env = 0.5f * (1.f - std::cos (juce::MathConstants<float>::pi
-                                                   * (float)w / (float)fadeInSamples));
-                }
-                else if (w < fadeInSamples + holdSamples)
-                {
-                    // Hold at 1.0 through the attack transient
-                    env = 1.f;
-                }
-                else
-                {
-                    // Cosine ramp down: 1 → 0
-                    const int wo = w - fadeInSamples - holdSamples;
-                    env = 0.5f * (1.f + std::cos (juce::MathConstants<float>::pi
-                                                   * (float)wo / (float)fadeOutSamples));
-                }
-
-                const int srcPos = (onsetPos  + w) % ringSize;
-                const int dstPos = (destStart + w) % ringSize;
-
-                // Output copy: hit audio × envelope
-                ringOutL[dstPos] += ringInL[srcPos] * env * gainScale;
-                ringOutR[dstPos] += ringInR[srcPos] * env * gainScale;
-
-                // Suppression mask: same envelope shape, so original fades out
-                // exactly as the copy fades in — total energy stays constant.
-                ringMask[dstPos] = std::min (ringMask[dstPos] + env, 1.f);
-            }
+            // The hit itself hasn't been written yet — queue it until
+            // peakScanSamples + hitWindowSamples more samples have arrived
+            if (numPendingHits < kMaxPendingHits)
+                pendingHits[numPendingHits++] = { ringWritePos,
+                                                  peakScanSamples + hitWindowSamples,
+                                                  (sixteenthCount % 2) == 1 };
 
             // ── 8. IOI fallback BPM ───────────────────────────────────────────
             if (lastOnsetRingPos >= 0 && ioiCount < 16)
@@ -291,6 +208,72 @@ void BreakScientistProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         else if (inTransient && envelope < runningRms * 0.35f)
         {
             inTransient = false;
+        }
+
+        // ── 4–7. Place hits whose audio is now fully in the ring ─────────────
+        for (int h = 0; h < numPendingHits;)
+        {
+            if (--pendingHits[h].samplesLeft > 0) { ++h; continue; }
+
+            const PendingHit hit = pendingHits[h];
+            pendingHits[h] = pendingHits[--numPendingHits];
+
+            // 4. Find true peak within peakScanSamples of the onset
+            int   peakOffset = 0;
+            float peakVal    = 0.f;
+            for (int s = 0; s < peakScanSamples; ++s)
+            {
+                const int scanPos = (hit.onsetWritePos + s) % ringSize;
+                const float v = std::max (std::fabs (ringInL[scanPos]),
+                                          std::fabs (ringInR[scanPos]));
+                if (v > peakVal) { peakVal = v; peakOffset = s; }
+            }
+
+            // 5. Displacement (drag + swing + humanize)
+            const int swingOffset = hit.oddSixteenth ? swingDelaySamples : 0;
+
+            int humanizeOffset = 0;
+            if (maxHumanizeSamples > 0)
+                humanizeOffset = rng.nextInt (maxHumanizeSamples * 2) - maxHumanizeSamples;
+
+            const int totalOffset = juce::jlimit (minOffset, maxOffset,
+                                                  dragSamples + swingOffset + humanizeOffset);
+
+            float gainScale = 1.f;
+            if (velocityVar > 0.f)
+            {
+                const float lo = 1.f - velocityVar * 0.5f;
+                const float hi = 1.f + velocityVar * 0.3f;
+                gainScale = lo + rng.nextFloat() * (hi - lo);
+            }
+
+            // 6 & 7. Crossfade the hit from its original position to the
+            // displaced one. The envelope fades in over the 5 ms before the
+            // peak, holds 10 ms, then fades out over the rest of the window:
+            //   original (mask) × (1 - env)  +  displaced copy × env
+            const int hitStart = (hit.onsetWritePos + peakOffset - fadeInSamples + ringSize) % ringSize;
+            const int dstStart = (hitStart + totalOffset + ringSize) % ringSize;
+
+            for (int w = 0; w < hitWindowSamples; ++w)
+            {
+                float env;
+                if (w < fadeInSamples)
+                    env = 0.5f * (1.f - std::cos (juce::MathConstants<float>::pi
+                                                   * (float)w / (float)fadeInSamples));
+                else if (w < fadeInSamples + holdSamples)
+                    env = 1.f;
+                else
+                    env = 0.5f * (1.f + std::cos (juce::MathConstants<float>::pi
+                                                   * (float)(w - fadeInSamples - holdSamples)
+                                                   / (float)fadeOutSamples));
+
+                const int srcPos = (hitStart + w) % ringSize;
+                const int dstPos = (dstStart + w) % ringSize;
+
+                ringOutL[dstPos] += ringInL[srcPos] * env * gainScale;
+                ringOutR[dstPos] += ringInR[srcPos] * env * gainScale;
+                ringMask[srcPos]  = std::min (ringMask[srcPos] + env, 1.f);
+            }
         }
 
         // ── 9. Advance grid phase ─────────────────────────────────────────────

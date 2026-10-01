@@ -65,7 +65,18 @@ void ThroughTheWallAudioProcessor::prepareToPlay(double sampleRate, int samplesP
     combBufferR.fill(0.0f);
     combWritePos = 0;
 
+    // Start at the current settings instead of ramping from fixed values
+    smoothedThickness = apvts.getRawParameterValue("thickness")->load();
+    smoothedBleed     = apvts.getRawParameterValue("bleed")->load();
+    smoothedRattle    = apvts.getRawParameterValue("rattle")->load();
+    smoothedDistance  = apvts.getRawParameterValue("distance")->load();
+
     updateFilters();
+    // Size the filter state for the new coefficients here, not on the audio thread
+    lowPassL.reset();
+    lowPassR.reset();
+    lowPass2L.reset();
+    lowPass2R.reset();
 }
 
 void ThroughTheWallAudioProcessor::releaseResources() {}
@@ -77,10 +88,12 @@ void ThroughTheWallAudioProcessor::updateFilters()
     float cutoff = std::exp(std::log(4000.0f) + thickness * (std::log(150.0f) - std::log(4000.0f)));
     cutoff = juce::jlimit(80.0f, 18000.0f, cutoff);
 
-    *lowPassL.state  = *juce::dsp::IIR::Coefficients<float>::makeLowPass(currentSampleRate, cutoff, 0.7f);
-    *lowPassR.state  = *juce::dsp::IIR::Coefficients<float>::makeLowPass(currentSampleRate, cutoff, 0.7f);
-    *lowPass2L.state = *juce::dsp::IIR::Coefficients<float>::makeLowPass(currentSampleRate, cutoff * 0.7f, 0.9f);
-    *lowPass2R.state = *juce::dsp::IIR::Coefficients<float>::makeLowPass(currentSampleRate, cutoff * 0.7f, 0.9f);
+    // ArrayCoefficients reuse the existing storage: no allocation on the audio thread
+    using Coeffs = juce::dsp::IIR::ArrayCoefficients<float>;
+    *lowPassL.state  = Coeffs::makeLowPass(currentSampleRate, cutoff, 0.7f);
+    *lowPassR.state  = Coeffs::makeLowPass(currentSampleRate, cutoff, 0.7f);
+    *lowPass2L.state = Coeffs::makeLowPass(currentSampleRate, cutoff * 0.7f, 0.9f);
+    *lowPass2R.state = Coeffs::makeLowPass(currentSampleRate, cutoff * 0.7f, 0.9f);
 }
 
 void ThroughTheWallAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
@@ -92,7 +105,9 @@ void ThroughTheWallAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer
     float targetRattle    = apvts.getRawParameterValue("rattle")->load();
     float targetDistance  = apvts.getRawParameterValue("distance")->load();
 
-    const float smoothCoeff = 0.005f;
+    // ~50 ms smoothing time constant, independent of block size
+    const float smoothCoeff = 1.0f - std::exp(-(float)buffer.getNumSamples()
+                                              / (0.05f * (float)currentSampleRate));
     bool filterNeedsUpdate = std::abs(targetThickness - smoothedThickness) > 0.001f;
     smoothedThickness += smoothCoeff * (targetThickness - smoothedThickness);
     smoothedBleed     += smoothCoeff * (targetBleed     - smoothedBleed);

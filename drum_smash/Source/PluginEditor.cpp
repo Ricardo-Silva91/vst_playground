@@ -99,7 +99,11 @@ void DrumSmashEditor::timerCallback()
 void DrumSmashEditor::mouseDown (const juce::MouseEvent& e)
 {
     int k = knobHitTest (e.position);
-    if (k >= 0) { draggingKnob = k; dragStartY = e.position.y; dragStartVal = getNorm (k); }
+    if (k >= 0)
+    {
+        draggingKnob = k; dragStartY = e.position.y; dragStartVal = getNorm (k);
+        if (auto* p = proc.apvts.getParameter (kKnobs[k].paramId)) p->beginChangeGesture();
+    }
 }
 
 void DrumSmashEditor::mouseDrag (const juce::MouseEvent& e)
@@ -111,7 +115,12 @@ void DrumSmashEditor::mouseDrag (const juce::MouseEvent& e)
     repaint();
 }
 
-void DrumSmashEditor::mouseUp (const juce::MouseEvent&) { draggingKnob = -1; }
+void DrumSmashEditor::mouseUp (const juce::MouseEvent&)
+{
+    if (draggingKnob >= 0)
+        if (auto* p = proc.apvts.getParameter (kKnobs[draggingKnob].paramId)) p->endChangeGesture();
+    draggingKnob = -1;
+}
 
 void DrumSmashEditor::mouseDoubleClick (const juce::MouseEvent& e)
 {
@@ -129,8 +138,9 @@ void DrumSmashEditor::mouseDoubleClick (const juce::MouseEvent& e)
     box->enterModalState (true,
         juce::ModalCallbackFunction::create ([box, fp](int r) {
             if (r == 1)
-                *fp = juce::jlimit (fp->range.start, fp->range.end,
-                                    box->getTextEditorContents ("val").getFloatValue());
+                SharedEditorUtils::setParamAsGesture (fp, fp->convertTo0to1 (
+                    juce::jlimit (fp->range.start, fp->range.end,
+                                  box->getTextEditorContents ("val").getFloatValue())));
         }), true);
 }
 
@@ -140,7 +150,8 @@ void DrumSmashEditor::mouseWheelMove (const juce::MouseEvent& e,
     int k = knobHitTest (e.position);
     if (k < 0) return;
     float step = e.mods.isShiftDown() ? 0.003f : 0.02f;
-    setNorm (k, getNorm (k) + w.deltaY * step);
+    SharedEditorUtils::setParamAsGesture (proc.apvts.getParameter (kKnobs[k].paramId),
+                                          getNorm (k) + w.deltaY * step);
     repaint();
 }
 

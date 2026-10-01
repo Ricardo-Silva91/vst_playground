@@ -22,8 +22,61 @@ try:
     import requests
 except ImportError:
     print("Installing 'requests' package...")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "requests", "--quiet"])
-    import requests
+    installed = False
+
+    # Strategy 1: normal pip
+    try:
+        subprocess.check_call(
+            [sys.executable, "-m", "pip", "install", "requests", "--quiet"],
+            stderr=subprocess.DEVNULL
+        )
+        installed = True
+    except subprocess.CalledProcessError:
+        pass
+
+    # Strategy 2: --break-system-packages (Homebrew / externally-managed envs)
+    if not installed:
+        try:
+            subprocess.check_call(
+                [sys.executable, "-m", "pip", "install", "requests",
+                 "--break-system-packages", "--quiet"],
+                stderr=subprocess.DEVNULL
+            )
+            installed = True
+        except subprocess.CalledProcessError:
+            pass
+
+    # Strategy 3: --user flag
+    if not installed:
+        try:
+            subprocess.check_call(
+                [sys.executable, "-m", "pip", "install", "requests",
+                 "--user", "--quiet"],
+                stderr=subprocess.DEVNULL
+            )
+            installed = True
+        except subprocess.CalledProcessError:
+            pass
+
+    # Strategy 4: create a venv, install there, and re-launch inside it
+    if not installed:
+        venv_dir = Path(tempfile.mkdtemp(prefix="lizard_vst_venv_"))
+        print("  Creating a temporary virtual environment...")
+        subprocess.check_call(
+            [sys.executable, "-m", "venv", str(venv_dir)],
+            stderr=subprocess.DEVNULL
+        )
+        venv_python = (venv_dir / "bin" / "python") if platform.system() != "Windows" \
+                      else (venv_dir / "Scripts" / "python.exe")
+        subprocess.check_call(
+            [str(venv_python), "-m", "pip", "install", "requests", "--quiet"],
+            stderr=subprocess.DEVNULL
+        )
+        # Re-launch the script using the venv's Python and exit this process
+        os.execv(str(venv_python), [str(venv_python)] + sys.argv)
+
+    if installed:
+        import requests
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
@@ -76,8 +129,8 @@ def relaunch_elevated():
         os.execvp("sudo", args)  # replaces current process
     elif SYSTEM == "Windows":
         import ctypes
-        params = f'"{sys.executable}" "{script}"'
-        ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, f'"{script}"', None, 1)
+        params = " ".join(f'"{a}"' for a in [script] + sys.argv[1:])
+        ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, params, None, 1)
         sys.exit(0)
 
 # ── GitHub API ────────────────────────────────────────────────────────────────
@@ -409,6 +462,9 @@ def main():
     if SYSTEM == "Windows":
         print(DIM("  FL Studio: Options → Manage plugins → Find more plugins"))
     print()
+    if SYSTEM == "Windows":
+        # The elevated relaunch runs in its own console, which closes on exit
+        input("  Press Enter to close ...")
 
 if __name__ == "__main__":
     main()

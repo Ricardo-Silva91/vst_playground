@@ -135,6 +135,11 @@ private:
     std::array<PitchShifter, kMaxVoices> upShifterR;
     std::array<PitchShifter, kMaxVoices> downShifterL;
     std::array<PitchShifter, kMaxVoices> downShifterR;
+    int lastNumVoices = kMaxVoices;
+
+    // Dry path delayed by the shifters' latency so dry and voices line up
+    std::array<float, PitchShifter::kFftSize> dryDelayL {}, dryDelayR {};
+    int dryDelayPos = 0;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ChoirBoxProcessor)
 };

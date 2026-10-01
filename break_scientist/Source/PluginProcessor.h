@@ -75,18 +75,18 @@ private:
     // future audio already sitting in the ring buffer.
     //
     // Onset detection runs on the WRITE side (incoming audio), 2 seconds ahead
-    // of what we're currently outputting. When we detect an onset at write
-    // position W, we:
+    // of what we're currently outputting. A sample written at ring index p is
+    // read back from the same index p, lookaheadSamples later. When we detect
+    // an onset at write position W, we queue it until the next
+    // (peak scan + hit window) samples have arrived, then:
     //
     //   1. Scan forward from W to find the true peak of the hit (up to 20ms)
-    //      — this anchors the Hann window at the actual attack, not the rise
+    //      — this anchors the window at the actual attack, not the rise
     //   2. Calculate displacement (drag + swing + humanize)
-    //   3. Write a Hann-windowed copy of the hit into the output ring at
-    //      (W - lookaheadSamples + displacement), i.e. at the output-time
-    //      position corresponding to W, shifted by the displacement
-    //   4. Write a FULL suppression mask (1.0) immediately at the onset in
-    //      the output ring — not Hann-ramped, so the original is killed
-    //      instantly with no bleed. Only the OUTPUT copy uses Hann.
+    //   3. Add an enveloped copy of the hit into the output ring at
+    //      (hit start + displacement)
+    //   4. Raise the suppression mask at the hit's ORIGINAL position with the
+    //      same envelope, so the original fades out as the copy fades in
     //
     // Undetected hits (hi-hats, quiet transients below threshold) pass through
     // the output ring untouched at their original positions.
@@ -110,6 +110,17 @@ private:
 
     int ringWritePos = 0;   // advances with incoming audio
     int ringReadPos  = 0;   // lags ringWritePos by lookaheadSamples
+
+    // Onsets waiting for the rest of their hit to be written
+    struct PendingHit
+    {
+        int  onsetWritePos;
+        int  samplesLeft;
+        bool oddSixteenth;
+    };
+    static constexpr int kMaxPendingHits = 16;
+    PendingHit pendingHits[kMaxPendingHits] {};
+    int numPendingHits = 0;
 
     // ── Onset detection (runs at write position) ──────────────────────────────
     // Peak-picking on a smoothed spectral flux / energy derivative.

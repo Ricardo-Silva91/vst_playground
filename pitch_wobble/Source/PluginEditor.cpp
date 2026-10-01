@@ -139,6 +139,8 @@ void PitchWobbleEditor::mouseDown (const juce::MouseEvent& e)
         draggingKnob = k;
         dragStartY   = e.position.y;
         dragStartVal = (k == 0) ? normDepth() : (k == 1) ? normRate() : normSmooth();
+        const char* ids[] = { "depth", "rate", "smooth" };
+        if (auto* p = proc.apvts.getParameter (ids[k])) p->beginChangeGesture();
     }
 }
 
@@ -150,7 +152,13 @@ void PitchWobbleEditor::mouseDrag (const juce::MouseEvent& e)
     repaint();
 }
 
-void PitchWobbleEditor::mouseUp (const juce::MouseEvent&) { draggingKnob = -1; }
+void PitchWobbleEditor::mouseUp (const juce::MouseEvent&)
+{
+    const char* ids[] = { "depth", "rate", "smooth" };
+    if (draggingKnob >= 0)
+        if (auto* p = proc.apvts.getParameter (ids[draggingKnob])) p->endChangeGesture();
+    draggingKnob = -1;
+}
 
 void PitchWobbleEditor::mouseDoubleClick (const juce::MouseEvent& e)
 {
@@ -175,7 +183,7 @@ void PitchWobbleEditor::mouseDoubleClick (const juce::MouseEvent& e)
             if (result == 1)
             {
                 float v = box->getTextEditorContents ("val").getFloatValue();
-                param->setValueNotifyingHost (param->convertTo0to1 (
+                SharedEditorUtils::setParamAsGesture (param, param->convertTo0to1 (
                     juce::jlimit (param->getNormalisableRange().start,
                                   param->getNormalisableRange().end, v)));
             }

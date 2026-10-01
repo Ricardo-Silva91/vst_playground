@@ -111,7 +111,7 @@ void LizardSuiteEditor::mouseDown (const juce::MouseEvent& e)
     if (e.mods.isRightButtonDown())
     {
         auto* param = proc.apvts.getParameter (kKnobDefs[k].paramId);
-        if (param) param->setValueNotifyingHost (param->getDefaultValue());
+        if (param) SharedEditorUtils::setParamAsGesture (param, param->getDefaultValue());
         repaint();
         return;
     }
@@ -119,6 +119,7 @@ void LizardSuiteEditor::mouseDown (const juce::MouseEvent& e)
     draggingKnob = k;
     dragStartY   = e.position.y;
     dragStartVal = getNorm (k);
+    if (auto* p = proc.apvts.getParameter (kKnobDefs[k].paramId)) p->beginChangeGesture();
 }
 
 void LizardSuiteEditor::mouseDrag (const juce::MouseEvent& e)
@@ -130,7 +131,12 @@ void LizardSuiteEditor::mouseDrag (const juce::MouseEvent& e)
     repaint();
 }
 
-void LizardSuiteEditor::mouseUp (const juce::MouseEvent&) { draggingKnob = -1; }
+void LizardSuiteEditor::mouseUp (const juce::MouseEvent&)
+{
+    if (draggingKnob >= 0)
+        if (auto* p = proc.apvts.getParameter (kKnobDefs[draggingKnob].paramId)) p->endChangeGesture();
+    draggingKnob = -1;
+}
 
 void LizardSuiteEditor::mouseDoubleClick (const juce::MouseEvent& e)
 {
@@ -149,7 +155,7 @@ void LizardSuiteEditor::mouseDoubleClick (const juce::MouseEvent& e)
         juce::ModalCallbackFunction::create ([box, rp](int result)
         {
             if (result == 1)
-                rp->setValueNotifyingHost (rp->convertTo0to1 (
+                SharedEditorUtils::setParamAsGesture (rp, rp->convertTo0to1 (
                     box->getTextEditorContents ("val").getFloatValue()));
         }), true);
 }

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Through the Wall — Lizard VST</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="shared.css">
+  <link rel="icon" type="image/x-icon" href="assets/favicon-32.png">
+  <style>
+    :root { --accent: #4ecf6a; --accent-rgb: 78,207,106; }
+    .hero-face .knob { background: radial-gradient(circle at 35% 30%, #2a3a2a 0%, #141e14 45%, #060c06 100%); }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <nav class="nav">
+    <a href="index.html">&#8592; All Plugins</a>
+    <span class="sep">/</span>
+    <span>Through the Wall</span>
+  </nav>
+
+  <div class="hero">
+    <div class="screw tl"></div><div class="screw tr"></div>
+    <div class="screw bl"></div><div class="screw br"></div>
+    <div class="hero-inner">
+      <div class="hero-face">
+        <span class="hero-num">MODULE 03 / 04</span>
+        <div class="hero-title">Through<br>the Wall</div>
+        <div class="knob-row">
+          <div class="knob-unit"><div class="knob" style="transform:rotate(60deg)"></div><span class="knob-label">Thick</span></div>
+          <div class="knob-unit"><div class="knob" style="transform:rotate(20deg)"></div><span class="knob-label">Bleed</span></div>
+          <div class="knob-unit"><div class="knob" style="transform:rotate(-10deg)"></div><span class="knob-label">Rattle</span></div>
+          <div class="knob-unit"><div class="knob" style="transform:rotate(40deg)"></div><span class="knob-label">Dist</span></div>
+        </div>
+        <div class="hero-cat">
+          <div class="cat-dot" style="background:var(--led-green);box-shadow:0 0 5px rgba(78,207,106,0.8);"></div>
+          Physical Model
+        </div>
+        <img src="assets/logo.png" alt="Lizard VST" class="hero-logo">
+      </div>
+      <div class="hero-body">
+        <div class="hero-tagline">The sound of music bleeding through drywall, concrete, and floors.</div>
+        <p class="hero-desc">
+          Through the Wall puts your audio on the other side of a wall. Not a simple lo-fi filter — a physically modelled transmission effect that replicates the four acoustic phenomena that actually happen when sound passes through a structure: <strong>high-frequency absorption, wall resonance, room bleed, and spatial distance</strong>. Dial in anything from a thin shared apartment wall to three floors of concrete.
+        </p>
+        <div class="hero-dl">
+          <a class="dl-btn mac" href="https://github.com/Ricardo-Silva91/vst_playground/releases/download/through_the_wall-latest/Through_The_Wall.vst3_Mac.zip">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 1 0 20A10 10 0 0 1 12 2z"/><path d="M12 8v8M8 14l4 4 4-4"/></svg>macOS
+          </a>
+          <a class="dl-btn win" href="https://github.com/Ricardo-Silva91/vst_playground/releases/download/through_the_wall-latest/Through_The_Wall.vst3_Windows.zip">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8"/><rect x="13" y="3" width="8" height="8"/><rect x="3" y="13" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/></svg>Windows
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content-grid">
+    <div class="panel">
+      <div class="panel-title">Signal Chain</div>
+      <div class="chain">
+        <span class="chain-node">Input</span><span class="chain-arrow">&#8250;</span>
+        <span class="chain-node highlight">Wall Rattle</span><span class="chain-arrow">&#8250;</span>
+        <span class="chain-node highlight">Room Bleed</span><span class="chain-arrow">&#8250;</span>
+        <span class="chain-node highlight">Distance</span><span class="chain-arrow">&#8250;</span>
+        <span class="chain-node highlight">Wall Thickness</span><span class="chain-arrow">&#8250;</span>
+        <span class="chain-node">Output</span>
+      </div>
+      <p class="chain-note">
+        The comb filter (Wall Rattle) models sympathetic resonance first, adding the physical character of the barrier material before the room bleed is applied. The Schroeder reverb network (Room Bleed) then adds the diffuse ambience of the space on the other side. Distance applies dry attenuation and reverb scaling. Finally, the dual cascaded IIR low-pass filters (Wall Thickness) strip out high frequencies exactly as material absorption does in the real world. All four parameters are smoothed per-sample to prevent zipper noise during automation.
+      </p>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Parameters</div>
+      <div class="param-list">
+        <div class="param-card">
+          <div class="param-name">Wall Thickness</div>
+          <p class="param-desc">Dual cascaded low-pass filters that eat into your high end the way a real wall does. <strong>At low settings</strong> you lose the air and shimmer. <strong>At max</strong> you're left with a muddy 150 Hz bloom — just low-end thud, nothing else.</p>
+          <div class="param-range">LPF cutoff: high (thin wall) &rarr; low (dense concrete)</div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">Room Bleed</div>
+          <p class="param-desc">A Schroeder reverb network (4 comb + 2 allpass filters) adding the diffuse ambience of the room on the other side. <strong>Crank it up and the source feels like it's sitting in a space you can't see.</strong></p>
+          <div class="param-range">Range: 0 (dry other-side) &rarr; 1 (full room)</div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">Wall Rattle</div>
+          <p class="param-desc">A short comb filter (2–8 ms) that models the wall itself resonating sympathetically. The hollow, buzzy coloration that cheap drywall adds when something hits the right frequency. <strong>Subtle at low settings, nasty at high ones.</strong></p>
+          <div class="param-range">Range: 0 (no resonance) &rarr; 1 (strong rattle)</div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">Distance</div>
+          <p class="param-desc">Pushes the dry signal further away while scaling up the reverb contribution. <strong>At max, the original source is almost entirely gone</strong> — just room wash and low-end surviving the journey.</p>
+          <div class="param-range">Range: near &rarr; very far</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content-grid wide">
+    <div class="panel">
+      <div class="panel-title">Presets</div>
+      <div class="preset-grid">
+        <div class="preset-card">
+          <div class="preset-name">Thin Partition</div>
+          <p class="preset-desc">Cheap drywall — highs still present, barely muffled. The room next door with a thin shared wall.</p>
+        </div>
+        <div class="preset-card">
+          <div class="preset-name">Apartment Next Door</div>
+          <p class="preset-desc">The classic shared-wall sound. Mids and highs attenuated, bleed of the neighbor's room audible.</p>
+        </div>
+        <div class="preset-card">
+          <div class="preset-name">Concrete Block</div>
+          <p class="preset-desc">Heavy wall, almost no highs, dense low-end rumble. Industrial building or a thick exterior wall.</p>
+        </div>
+        <div class="preset-card">
+          <div class="preset-name">Upstairs Neighbor</div>
+          <p class="preset-desc">Floor/ceiling transmission — thuddy and diffuse. Footsteps and bass come through; everything else is gone.</p>
+        </div>
+        <div class="preset-card">
+          <div class="preset-name">Rattling Pipes</div>
+          <p class="preset-desc">Old building with loose structure. Wall Rattle is pushed high — the wall buzzes in sympathy with bass frequencies.</p>
+        </div>
+        <div class="preset-card">
+          <div class="preset-name">Ghost Room</div>
+          <p class="preset-desc">Barely there — bass and reverb wash only. The most extreme setting. More atmosphere than signal.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content-grid wide">
+    <div class="panel">
+      <div class="panel-title">Use Cases</div>
+      <div class="usecase-list">
+        <div class="usecase-card">
+          <div class="usecase-title">Lo-fi and bedroom pop</div>
+          <p class="usecase-body">Add the "heard through a wall" texture to drums, bass, or a whole bus. Works especially well as a <strong>parallel layer under the clean signal</strong> — the processed version adds subliminal spatial depth without fully muffling anything.</p>
+          <div class="usecase-settings">Wall Thickness: 0.4–0.6 / Room Bleed: 0.3–0.5 / Rattle: 0.1 / Distance: 0.3</div>
+        </div>
+        <div class="usecase-card">
+          <div class="usecase-title">Film and game audio</div>
+          <p class="usecase-body">Off-screen sources, adjacent rooms, muffled interiors. A character hears music playing from next door. Keep Wall Rattle and Room Bleed moderate to avoid caricature — <strong>the goal is plausibility</strong>, not a lo-fi effect.</p>
+          <div class="usecase-settings">Wall Thickness: 0.5 / Room Bleed: 0.3 / Rattle: 0.2 / Distance: 0.4</div>
+        </div>
+        <div class="usecase-card">
+          <div class="usecase-title">Transition effects</div>
+          <p class="usecase-body">Automate Wall Thickness to make a sound "push through" from one space to another. Increasing thickness over 4–8 bars then suddenly cutting to dry <strong>creates a vivid sense of moving through a physical barrier</strong>.</p>
+          <div class="usecase-settings">Wall Thickness: automate 0 &rarr; 0.8 / Distance: automate with thickness</div>
+        </div>
+        <div class="usecase-card">
+          <div class="usecase-title">Upstairs neighbor bass thud</div>
+          <p class="usecase-body">Max out Wall Thickness and Distance, push Wall Rattle high to get the resonant boom of a kick drum heard through a concrete ceiling. High end is completely gone, bass hits with <strong>that building-shaking quality felt more than heard</strong>.</p>
+          <div class="usecase-settings">Wall Thickness: 0.9 / Room Bleed: 0.4 / Rattle: 0.7 / Distance: 0.6</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content-grid wide">
+    <div class="panel">
+      <div class="panel-title">Tips and Workflow</div>
+      <div class="tip-list">
+        <div class="tip">
+          <span class="tip-icon">&#9654;</span>
+          <p class="tip-text"><strong>Think in layers.</strong> Wall Thickness sets what frequencies survive. Room Bleed sets how much of the receiving space is audible. Rattle adds the physical character of the barrier itself. Distance pulls the whole thing back. Adjust in that order for the most controlled results.</p>
+        </div>
+        <div class="tip">
+          <span class="tip-icon">&#9654;</span>
+          <p class="tip-text"><strong>Room Bleed without Wall Thickness is just reverb.</strong> The effect is most convincing when the LPF has removed high frequencies first. A reverberant muffled signal sounds like a room. A reverberant bright signal just sounds like a large space.</p>
+        </div>
+        <div class="tip">
+          <span class="tip-icon">&#9654;</span>
+          <p class="tip-text"><strong>Use on a send for realism.</strong> In film or game audio, blend the processed signal at low level under the dry source. The dry channel stays close; the send adds the "other room" layer without replacing the original.</p>
+        </div>
+        <div class="tip">
+          <span class="tip-icon">&#9654;</span>
+          <p class="tip-text"><strong>Wall Rattle pairs well with bass-heavy sources.</strong> The comb filter resonances interact with fundamental frequencies. On kick drums or bass guitars, push Rattle and listen for which frequencies start to "sing" out of the wall — that's the physical resonance of the barrier material.</p>
+        </div>
+        <div class="tip">
+          <span class="tip-icon">&#9654;</span>
+          <p class="tip-text"><strong>Low CPU cost.</strong> No FFT, no oversampling — the plugin uses simple IIR filters and a Schroeder network, so it runs lightly even on older hardware. Stack multiple instances on different tracks without concern.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="screw tl"></div><div class="screw tr"></div>
+    <span class="footer-text">Lizard VST &nbsp;&#183;&nbsp; Free VST3 &nbsp;&#183;&nbsp; macOS &amp; Windows</span>
+    <a class="footer-link" href="https://mrgloomy.bandcamp.com/" target="_blank">&#9829; Support the project — buy my music on Bandcamp</a>
+    <a class="footer-link" href="https://github.com/Ricardo-Silva91/vst_playground" target="_blank">&#8599; See on GitHub</a>
+  </footer>
+
+</div>
+</body>
+</html>

@@ -25,6 +25,14 @@ std::unique_ptr<juce::Drawable> loadLogo()
         BinaryData::logo_transparent_svg, BinaryData::logo_transparent_svgSize);
 }
 
+void setParamAsGesture (juce::AudioProcessorParameter* p, float normalisedValue)
+{
+    if (p == nullptr) return;
+    p->beginChangeGesture();
+    p->setValueNotifyingHost (juce::jlimit (0.f, 1.f, normalisedValue));
+    p->endChangeGesture();
+}
+
 void drawScanLines (juce::Graphics& g, juce::Rectangle<float> area, float opacity)
 {
     g.setColour (juce::Colours::white.withAlpha (opacity));

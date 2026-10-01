@@ -91,8 +91,10 @@ const juce::String PitchWobbleProcessor::getProgramName (int index)
 void PitchWobbleProcessor::prepareToPlay (double sampleRate, int)
 {
     currentSampleRate = sampleRate;
+    nominalDelay  = (int) (kNominalDelaySec * sampleRate);
+    setLatencySamples (nominalDelay);
     writePos      = 0;
-    readPos       = 0.0f;
+    readPos       = (double) (BUFFER_SIZE - nominalDelay - 1);
     wobbleCurrent = 0.0f;
     wobbleTarget  = 0.0f;
     wobblePhase   = 0.0f;
@@ -144,19 +146,25 @@ void PitchWobbleProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 
         wobbleCurrent = wobbleCurrent * smoothCoeff + wobbleTarget * (1.0f - smoothCoeff);
 
-        float pitchRatio = centsToPitchRatio (wobbleCurrent);
-        readPos += pitchRatio;
+        double gap = (double)writePos - readPos;
+        if (gap < 0.0) gap += (double)BUFFER_SIZE;
 
-        if (readPos >= (float)BUFFER_SIZE)
-            readPos -= (float)BUFFER_SIZE;
+        // Slow pull toward the nominal delay keeps the drift bounded
+        // (gap - 1 is the delay this sample will be read at with ratio 1)
+        const double correction = (gap - 1.0 - (double)nominalDelay)
+                                  / (kDriftCorrectionSec * currentSampleRate);
+        readPos += (double)centsToPitchRatio (wobbleCurrent) * (1.0 + correction);
 
-        float gap = (float)writePos - readPos;
-        if (gap < 0.0f) gap += (float)BUFFER_SIZE;
-        if (gap < 4.0f) readPos = (float)((writePos - 4 + BUFFER_SIZE) % BUFFER_SIZE);
+        if (readPos >= (double)BUFFER_SIZE)
+            readPos -= (double)BUFFER_SIZE;
+
+        gap = (double)writePos - readPos;
+        if (gap < 0.0) gap += (double)BUFFER_SIZE;
+        if (gap < 4.0) readPos = (double)((writePos - 4 + BUFFER_SIZE) % BUFFER_SIZE);
 
         int   readIdx0 = (int)readPos % BUFFER_SIZE;
         int   readIdx1 = (readIdx0 + 1) % BUFFER_SIZE;
-        float frac     = readPos - (float)(int)readPos;
+        float frac     = (float)(readPos - (double)(int)readPos);
 
         for (int ch = 0; ch < numChannels; ++ch)
         {

@@ -102,6 +102,8 @@ void ThroughTheWallAudioProcessorEditor::mouseDown(const juce::MouseEvent& e)
         dragStartY   = e.position.y;
         float norms[] = { normThickness(), normBleed(), normRattle(), normDistance() };
         dragStartVal = norms[k];
+        const char* ids[] = { "thickness", "bleed", "rattle", "distance" };
+        if (auto* p = audioProcessor.apvts.getParameter(ids[k])) p->beginChangeGesture();
     }
 }
 
@@ -113,7 +115,13 @@ void ThroughTheWallAudioProcessorEditor::mouseDrag(const juce::MouseEvent& e)
     repaint();
 }
 
-void ThroughTheWallAudioProcessorEditor::mouseUp(const juce::MouseEvent&) { draggingKnob = -1; }
+void ThroughTheWallAudioProcessorEditor::mouseUp(const juce::MouseEvent&)
+{
+    const char* ids[] = { "thickness", "bleed", "rattle", "distance" };
+    if (draggingKnob >= 0)
+        if (auto* p = audioProcessor.apvts.getParameter(ids[draggingKnob])) p->endChangeGesture();
+    draggingKnob = -1;
+}
 
 void ThroughTheWallAudioProcessorEditor::mouseDoubleClick(const juce::MouseEvent& e)
 {
@@ -133,9 +141,8 @@ void ThroughTheWallAudioProcessorEditor::mouseDoubleClick(const juce::MouseEvent
     box->enterModalState(true, juce::ModalCallbackFunction::create(
         [box, param](int result) {
             if (result == 1)
-                param->setValueNotifyingHost(
-                    juce::jlimit(0.0f, 1.0f,
-                        box->getTextEditorContents("val").getFloatValue()));
+                SharedEditorUtils::setParamAsGesture(param,
+                    box->getTextEditorContents("val").getFloatValue());
         }), true);
 }
 
