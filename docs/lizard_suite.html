@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lizard Suite — Lizard VST</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/x-icon" href="assets/favicon-32.png">
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    :root {
+      --accent: #86c46b; --accent-rgb: 134,196,107;
+      /* live demo plot tokens (read by lizard_suite_demo.js) */
+      --muted: #7a746c; --dry: #6a645c; --marker: #e8820a; --shade: rgba(232,130,10,0.08);
+      --grid: rgba(212,207,200,0.07); --plot-bg: #101010; --off: #e07a5c;
+      --lcd-bg: #0a0d08; --lcd-ink: #c4e06a;
+    }
+    .hero-face .knob { background: radial-gradient(circle at 35% 30%, #2c3a22 0%, #172012 45%, #070b05 100%); }
+
+    /* ── LIVE DEMO ── */
+    .demo-intro { font-size: 1rem; color: var(--text-dim); line-height: 1.65; margin-bottom: 1rem; max-width: 70ch; }
+    .demo-intro strong { color: var(--text); font-weight: 600; }
+    .demo-meta { font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; color: var(--text-dim); text-transform: uppercase; }
+    .demo-grid { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 1rem; align-items: start; }
+    .demo-ctrls { display: grid; gap: 1rem; padding: 0.2rem; }
+    .demo-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 0.4rem; }
+    .demo-seg { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+    #lizardDemo button {
+      font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--silk);
+      background: linear-gradient(180deg, #252525, #1a1a1a); border: 1px solid #333; border-top-color: #444; border-bottom-color: #0a0a0a;
+      padding: 0.5rem 0.7rem; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+    #lizardDemo button:hover { color: var(--text); }
+    #lizardDemo button[aria-pressed="true"] { color: var(--accent); border-color: rgba(var(--accent-rgb),0.5); background: rgba(var(--accent-rgb),0.08); }
+    #lizardDemo button:disabled { opacity: 0.4; cursor: not-allowed; }
+    #lizardDemo button:focus-visible, #lizardDemo input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .demo-transport { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+    #lizardDemo .play { font-size: 12px; padding: 0.8rem; color: #10140e; background: var(--accent); border-color: var(--accent); }
+    #lizardDemo .play:hover { color: #10140e; filter: brightness(1.08); }
+    #lizardDemo .bypass[aria-pressed="true"] { color: #10140e; background: var(--led-amber); border-color: var(--led-amber); }
+    .demo-status { grid-column: 1 / -1; font-family: var(--mono); font-size: 10px; color: var(--text-dim); min-height: 1.3em; letter-spacing: 0.05em; }
+    .drop-active { outline: 2px dashed var(--accent); outline-offset: 4px; }
+
+    .lz-rack { display: grid; gap: 0.6rem; }
+    .lz-module { background: var(--metal); border: 1px solid #2a2a2a; border-top-color: #363636; border-bottom-color: #0d0d0d; border-left: 2px solid var(--accent); padding: 0.7rem 0.8rem 0.8rem; display: grid; gap: 0.6rem; }
+    .lz-mod-head { display: flex; align-items: baseline; gap: 0.6rem; }
+    .lz-mod-num { font-family: var(--mono); font-size: 9px; color: var(--text-dim); }
+    .lz-mod-name { font-family: var(--sans); font-weight: 700; font-size: 1rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent); }
+    .lz-mod-role { font-family: var(--mono); font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-dim); }
+    .lz-mod-state { margin-left: auto; font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; padding: 1px 5px; border: 1px solid var(--accent); color: var(--accent); }
+    .lz-mod-state.off { border-color: var(--off); color: var(--off); }
+    .lz-ctl { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 0.2rem 0.6rem; }
+    .lz-ctl label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--silk); }
+    .lz-lcd { font: 12px/1 var(--mono); color: var(--lcd-ink); background: var(--lcd-bg); border: 1px solid #000; padding: 4px 6px; min-width: 9ch; text-align: right; font-variant-numeric: tabular-nums; }
+    .lz-ctl input { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); margin: 0; }
+    .lz-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: #111; border: 1px solid #111; }
+    .lz-stat { background: var(--panel); padding: 4px 7px; }
+    .lz-stat dt { font-family: var(--mono); font-size: 8px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-dim); }
+    .lz-stat dd { font-family: var(--mono); font-size: 11px; color: var(--text); font-variant-numeric: tabular-nums; }
+
+    .demo-viz { display: grid; gap: 1.2rem; }
+    .plot-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 0.3rem 1rem; margin-bottom: 0.4rem; }
+    .plot-head h3 { font-family: var(--mono); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); font-weight: normal; }
+    .legend { display: flex; flex-wrap: wrap; gap: 0.8rem; font-family: var(--mono); font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.1em; }
+    .legend i { display: inline-block; width: 12px; height: 3px; vertical-align: middle; margin-right: 5px; }
+    .lg-dry { background: var(--dry); } .lg-wet { background: var(--accent); } .lg-mark { background: var(--marker); }
+    #lizardDemo canvas { display: block; width: 100%; background: var(--plot-bg); border: 1px solid #0a0a0a; box-shadow: inset 0 1px 4px rgba(0,0,0,0.6); }
+    #spec { height: 260px; } #scope { height: 140px; } #level { height: 150px; }
+    .caption { font-size: 0.95rem; color: var(--text-dim); line-height: 1.55; margin-top: 0.4rem; }
+
+    .listen { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.7rem; margin-top: 1.2rem; }
+    .listen article { background: var(--metal); border: 1px solid #2a2a2a; border-left: 2px solid var(--led-amber); padding: 0.8rem 0.9rem; display: flex; flex-direction: column; gap: 0.4rem; }
+    .listen h4 { font-family: var(--sans); font-weight: 600; font-size: 0.95rem; color: var(--text); letter-spacing: 0.04em; }
+    .listen p { font-size: 0.95rem; color: var(--text-dim); line-height: 1.5; flex: 1; }
+    #lizardDemo .listen button { align-self: start; font-size: 9px; padding: 0.4rem 0.6rem; color: var(--led-amber); }
+    .demo-note { font-family: var(--mono); font-size: 9px; color: var(--text-dim); margin-top: 1rem; letter-spacing: 0.05em; line-height: 1.7; }
+    .demo-note a { color: var(--accent); }
+    code { font-family: var(--mono); font-size: 0.9em; }
+
+    @media (max-width: 820px) { .demo-grid { grid-template-columns: minmax(0, 1fr); } }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <nav class="nav">
+    <a href="index.html">&#8592; All Plugins</a>
+    <span class="sep">/</span>
+    <span>Lizard Suite</span>
+  </nav>
+
+  <div class="hero">
+    <div class="screw tl"></div><div class="screw tr"></div>
+    <div class="screw bl"></div><div class="screw br"></div>
+    <div class="hero-inner">
+      <div class="hero-face">
+        <span class="hero-num">MODULE 07 / 07</span>
+        <div class="hero-title">Lizard<br>Suite</div>
+        <div class="knob-row" style="gap:0.6rem;">
+          <div class="knob-unit"><div class="knob" style="transform:rotate(-20deg);width:38px;height:38px;"></div><span class="knob-label">Dust</span></div>
+          <div class="knob-unit"><div class="knob" style="transform:rotate(15deg);width:38px;height:38px;"></div><span class="knob-label">Chew</span></div>
+          <div class="knob-unit"><div class="knob" style="transform:rotate(40deg);width:38px;height:38px;"></div><span class="knob-label">Murk</span></div>
+          <div class="knob-unit"><div class="knob" style="transform:rotate(-35deg);width:38px;height:38px;"></div><span class="knob-label">Vinyl</span></div>
+        </div>
+        <div class="hero-cat">
+          <div class="cat-dot" style="background:var(--accent);box-shadow:0 0 5px rgba(134,196,107,0.9);"></div>
+          Lo-Fi Chain
+        </div>
+        <img src="assets/logo.png" alt="Lizard VST" class="hero-logo">
+      </div>
+      <div class="hero-body">
+        <div class="hero-tagline">Dead tape off a dusty record.</div>
+        <p class="hero-desc">
+          Lizard Suite chains four lo-fi modules in one plugin: <strong>an old sampler, a chewed cassette, a murky basement and a worn record.</strong> Each module has an "off" setting that passes the signal through bit for bit, so you can use one stage or all four. You can try it in your browser below before you download it.
+        </p>
+        <div class="hero-dl">
+          <a class="dl-btn mac" href="https://github.com/Ricardo-Silva91/vst_playground/releases/download/lizard_suite-latest/Lizard_Suite.vst3_Mac.zip">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 1 0 20A10 10 0 0 1 12 2z"/><path d="M12 8v8M8 14l4 4 4-4"/></svg>macOS
+          </a>
+          <a class="dl-btn win" href="https://github.com/Ricardo-Silva91/vst_playground/releases/download/lizard_suite-latest/Lizard_Suite.vst3_Windows.zip">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8"/><rect x="13" y="3" width="8" height="8"/><rect x="3" y="13" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/></svg>Windows
+          </a>
+          <a class="dl-btn" href="#demo" style="color:var(--accent);border-color:rgba(134,196,107,0.3);">&#9654; Try it live</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIGNAL CHAIN -->
+  <div class="content-grid wide">
+    <div class="panel">
+      <div class="panel-title">Signal Chain</div>
+      <div class="chain">
+        <span class="chain-node">Input</span><span class="chain-arrow">&#8250;</span>
+        <span class="chain-node highlight">01 Dust &middot; sampler</span><span class="chain-arrow">&#8250;</span>
+        <span class="chain-node highlight">02 Chew &middot; tape</span><span class="chain-arrow">&#8250;</span>
+        <span class="chain-node highlight">03 Murk &middot; room</span><span class="chain-arrow">&#8250;</span>
+        <span class="chain-node highlight">04 Vinyl &middot; record</span><span class="chain-arrow">&#8250;</span>
+        <span class="chain-node">Output</span>
+      </div>
+      <p class="chain-note">
+        The order is fixed and runs on each channel. Dust degrades the signal like an old sampler. Chew makes the level sag like tape losing the head. Murk puts the result in a dark room. Vinyl lays a noise bed over everything, so the hiss and crackle stay clean and are not crushed or reverberated. Parameters apply once per audio block with no smoothing. Chew's dropouts hit both channels together. Vinyl's hiss is different on each channel, so it sounds stereo. The plugin adds no latency.
+      </p>
+    </div>
+  </div>
+
+  <!-- LIVE DEMO -->
+  <div class="content-grid wide" id="demo">
+    <div class="panel" id="lizardDemo">
+      <div class="plot-head" style="margin-bottom:0.6rem;">
+        <div class="panel-title" style="margin-bottom:0;">Live Demo</div>
+        <span class="demo-meta" id="hostInfo">host — kHz</span>
+      </div>
+      <p class="demo-intro">
+        This is the plugin's DSP, running in your browser. Pick a source, press <strong>Play</strong>, and turn the knobs. Use <strong>Bypass</strong> to compare with the dry signal. You can drop your own audio file onto the controls. The plots update while it plays, and before you press Play they show an offline render of the current settings.
+      </p>
+
+      <div class="demo-grid">
+        <section class="demo-ctrls" id="demoControls" aria-label="Demo controls">
+          <div>
+            <p class="demo-label">Source</p>
+            <div class="demo-seg" role="group" aria-label="Source">
+              <button id="srcLoop" aria-pressed="true">Drum loop</button>
+              <button id="srcSweep" aria-pressed="false">Sine sweep</button>
+              <button id="srcSilence" aria-pressed="false">Silence</button>
+              <button id="srcFile" aria-pressed="false" disabled>Your file</button>
+              <button id="loadBtn">Load file&#8230;</button>
+              <input id="fileIn" type="file" accept="audio/*" hidden>
+            </div>
+          </div>
+          <div class="demo-transport">
+            <button class="play" id="playBtn">Play</button>
+            <button class="bypass" id="bypassBtn" aria-pressed="false" title="Compare against the dry input">Bypass</button>
+            <p class="demo-status" id="status" aria-live="polite">Stopped. The plots are a static preview.</p>
+          </div>
+          <div>
+            <p class="demo-label">Starting points</p>
+            <div class="demo-seg" id="lzPresets"></div>
+          </div>
+          <div class="lz-rack" id="rack"></div>
+        </section>
+
+        <section class="demo-viz" aria-label="Analysis">
+          <div>
+            <div class="plot-head">
+              <h3>Spectrum</h3>
+              <div class="legend"><span><i class="lg-dry"></i>Input</span><span><i class="lg-wet"></i>Output</span><span><i class="lg-mark"></i>Half Dust rate</span></div>
+            </div>
+            <canvas id="spec" role="img" aria-label="Spectrum of the input and output"></canvas>
+            <p class="caption">Dust's imaging sits right of the amber line. Vinyl raises the noise floor everywhere and adds rumble below 50 Hz. Murk's damping darkens the tail, so the output falls below the input at the top end.</p>
+          </div>
+          <div>
+            <div class="plot-head">
+              <h3>Level over 4 seconds</h3>
+              <div class="legend"><span><i class="lg-dry"></i>Input</span><span><i class="lg-wet"></i>Output</span></div>
+            </div>
+            <canvas id="level" role="img" aria-label="RMS level of input and output over four seconds"></canvas>
+            <p class="caption">RMS level in 10 ms windows, from an offline render of the left channel. Chew's dropouts dip below the input, Murk's tail fills the gaps between hits, and Vinyl sets the floor.</p>
+          </div>
+          <div>
+            <div class="plot-head">
+              <h3>Waveform, sample by sample</h3>
+              <div class="legend"><span><i class="lg-dry"></i>Input</span><span><i class="lg-wet"></i>Output</span></div>
+            </div>
+            <canvas id="scope" role="img" aria-label="Zoomed waveform showing held samples and quantiser steps"></canvas>
+            <p class="caption">160 samples. The steps are Dust's held samples and quantiser levels, with vinyl crackle on top.</p>
+          </div>
+        </section>
+      </div>
+
+      <div class="listen" aria-label="What to listen for">
+        <article>
+          <h4>Every off setting is dry</h4>
+          <p>Set Dust Mix, Chew Depth, Murk Mix and Vinyl Amount to 0 and the output is bit-identical to the input, even with every other knob at an extreme. Bypass then changes nothing.</p>
+          <button data-try="off">Turn all four off</button>
+        </article>
+        <article>
+          <h4>Murk stays stable at max Room</h4>
+          <p>Room at max, Damp at 0, Mix at 100 %. The low end rings for about 10 seconds, but the level plot shows the tail decaying after each hit rather than building up.</p>
+          <button data-try="murk">Max Room, Murk only</button>
+        </article>
+        <article>
+          <h4>Chew never adds energy</h4>
+          <p>Chew only reduces gain, so in the level plot the output dips under the input and never rises above it. On the loop you hear the level sag and recover.</p>
+          <button data-try="chew">Heavy Chew, Chew only</button>
+        </article>
+        <article>
+          <h4>Older records are noisier</h4>
+          <p>On silence, Vinyl plays hiss, a 50 Hz rumble and crackle. Move Age from 0 to 100 % and the bed gets louder and the pops come more often.</p>
+          <button data-try="vinyl">Vinyl on silence</button>
+        </article>
+        <article>
+          <h4>The full chain</h4>
+          <p>12-bit grit, a few tape dropouts, a dark basement, and an old record underneath.</p>
+          <button data-try="dead">Load the full chain</button>
+        </article>
+      </div>
+
+      <p class="demo-note">
+        The demo runs a JavaScript port of <code>lizard_suite/Source/DSP/LizardDust.h</code>, <code>LizardChew.h</code>, <code>LizardMurk.h</code> and <code>LizardVinyl.h</code>, plus the processor's per-channel wiring, in an AudioWorklet. It is not the compiled plugin. The port rounds to 32-bit float the same way the C++ does. It was checked against a native build of the same cores and wiring: 0 mismatches over 1,152,000 samples across 6 settings at 44.1 and 48 kHz, including a seed change partway through. The only difference is the last bit of <code>tanh</code> in Dust's Drive stage. That last bit depends on the platform's math library, so the compiled plugin can differ there too. As in the plugin, parameters apply once per 128-sample block with no smoothing.
+        Source: <a href="https://github.com/Ricardo-Silva91/vst_playground/tree/main/lizard_suite" target="_blank" rel="noopener">lizard_suite on GitHub</a>.
+      </p>
+    </div>
+  </div>
+
+  <!-- PARAMETERS -->
+  <div class="content-grid">
+    <div class="panel">
+      <div class="panel-title">01 Dust &middot; Sampler</div>
+      <div class="param-list">
+        <div class="param-card">
+          <div class="param-name">Rate</div>
+          <p class="param-desc">Sample-and-hold rate reduction with <strong>no reconstruction filter</strong>, so images appear above half the rate. The default of 26,040 Hz is close to an SP-1200. At or above the host rate it has no effect.</p>
+          <div class="param-range">Range: 1,000 &rarr; 48,000 Hz &nbsp;&nbsp; Default: 26,040</div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">Bits</div>
+          <p class="param-desc">Bit-depth crush with no dither. 12 is the classic sampler grain. Below 6 the quantiser steps become clearly audible.</p>
+          <div class="param-range">Range: 2 &rarr; 16 &nbsp;&nbsp; Default: 12</div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">Low-pass &middot; Drive</div>
+          <p class="param-desc">An optional 1-pole low-pass after the crush, and tanh drive before it. <strong>Both are off by default</strong>, because much of an old sampler's sound comes from the filter it doesn't have.</p>
+          <div class="param-range">Low-pass: 0 (off) &rarr; 20,000 Hz &nbsp;&nbsp; Drive: 1 &rarr; 8, default 1</div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">Mix</div>
+          <p class="param-desc">Dry/wet blend. <strong>0 turns Dust off</strong> and passes the signal through bit for bit.</p>
+          <div class="param-range">Range: 0 &rarr; 1 &nbsp;&nbsp; Default: 1</div>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">02 Chew &middot; Tape</div>
+      <div class="param-list">
+        <div class="param-card">
+          <div class="param-name">Rate</div>
+          <p class="param-desc">Average number of dropouts per second. Each one sags the level to a random depth, then recovers over about 50 ms, like tape losing contact with the head.</p>
+          <div class="param-range">Range: 0 &rarr; 20 /s &nbsp;&nbsp; Default: 3</div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">Depth</div>
+          <p class="param-desc">How deep the worst sag can go. Chew only lowers the gain, so <strong>the output never gets louder than the input</strong>. 0 turns Chew off.</p>
+          <div class="param-range">Range: 0 &rarr; 1 &nbsp;&nbsp; Default: 0.5</div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">Smooth</div>
+          <p class="param-desc">Gain smoothing time. Short values give abrupt, choppy drops. Long values give a slow, seasick wobble.</p>
+          <div class="param-range">Range: 1 &rarr; 50 ms &nbsp;&nbsp; Default: 8</div>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">03 Murk &middot; Room</div>
+      <div class="param-list">
+        <div class="param-card">
+          <div class="param-name">Room</div>
+          <p class="param-desc">Tail length. A dark Schroeder-style reverb with 4 damped combs into 2 allpasses. Comb feedback goes from 0.70 to 0.98, so <strong>it stays stable even at max</strong>.</p>
+          <div class="param-range">Range: 0 &rarr; 1 &nbsp;&nbsp; Default: 0.6</div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">Damp</div>
+          <p class="param-desc">A low-pass inside the comb feedback. Higher values darken the tail, from basement to underwater.</p>
+          <div class="param-range">Range: 0 &rarr; 1 &nbsp;&nbsp; Default: 0.5</div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">Mix</div>
+          <p class="param-desc">Dry/wet blend. 0 turns Murk off.</p>
+          <div class="param-range">Range: 0 &rarr; 1 &nbsp;&nbsp; Default: 0.3</div>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">04 Vinyl &middot; Record</div>
+      <div class="param-list">
+        <div class="param-card">
+          <div class="param-name">Age</div>
+          <p class="param-desc">How worn the record is. Older records have <strong>louder hiss, more 50 Hz turntable rumble, and more frequent, harder pops</strong>.</p>
+          <div class="param-range">Range: 0 &rarr; 1 &nbsp;&nbsp; Default: 0.4</div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">Amount</div>
+          <p class="param-desc">Level of the noise bed, which is added on top of the signal. 0 turns Vinyl off.</p>
+          <div class="param-range">Range: 0 &rarr; 1 &nbsp;&nbsp; Default: 0.5</div>
+        </div>
+        <div class="param-card">
+          <div class="param-name">Seed</div>
+          <p class="param-desc">Chooses the noise pattern. The same seed always gives the same crackle, so a bounce sounds the same every time. Change it if a pop lands somewhere you don't want it.</p>
+          <div class="param-range">Range: 1 &rarr; 999 &nbsp;&nbsp; Default: 1</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STARTING POINTS -->
+  <div class="content-grid wide">
+    <div class="panel">
+      <div class="panel-title">Starting Points</div>
+      <div class="preset-grid">
+        <div class="preset-card">
+          <div class="preset-name">Dead Tape</div>
+          <p class="preset-desc">The full chain: 12-bit Dust with a 9 kHz low-pass and a little drive, a few dropouts, a dark room at 30 %, and a fairly worn record underneath.</p>
+        </div>
+        <div class="preset-card">
+          <div class="preset-name">Basement</div>
+          <p class="preset-desc">Murk only. Long room, heavy damping, 55 % wet. Sounds like music coming down the stairs.</p>
+        </div>
+        <div class="preset-card">
+          <div class="preset-name">Chewed Cassette</div>
+          <p class="preset-desc">Frequent, deep dropouts with a short smoothing time, over a 32 kHz, 12-bit Dust with a 7 kHz low-pass.</p>
+        </div>
+        <div class="preset-card">
+          <div class="preset-name">Old 78</div>
+          <p class="preset-desc">Dust at 16 kHz and 10 bits with a 4.5 kHz low-pass, under a very old, loud record. Crackly and boxy.</p>
+        </div>
+        <div class="preset-card">
+          <div class="preset-name">Clean</div>
+          <p class="preset-desc">Every module off, so the output is bit-identical to the input. Start here and bring in one stage at a time.</p>
+        </div>
+      </div>
+      <p class="chain-note">These are the starting points in the live demo above. They are suggestions for the plugin's knobs, not factory presets inside the plugin.</p>
+    </div>
+  </div>
+
+  <!-- USE CASES -->
+  <div class="content-grid wide">
+    <div class="panel">
+      <div class="panel-title">Use Cases</div>
+      <div class="usecase-list">
+        <div class="usecase-card">
+          <div class="usecase-title">Sampled-from-vinyl drums</div>
+          <p class="usecase-body">Put it on a clean drum bus with Dust at 12 bits and a low-pass around 9 kHz, Vinyl at a low Amount, and Chew and Murk off. The kit sounds <strong>lifted off a record into an old sampler</strong>, with the crackle sitting under it rather than on top.</p>
+          <div class="usecase-settings">Dust: 26 kHz / 12 bit / LP 9k &middot; Vinyl: Age 0.5, Amount 0.3 &middot; Chew &amp; Murk: off</div>
+        </div>
+        <div class="usecase-card">
+          <div class="usecase-title">Worn tape keys</div>
+          <p class="usecase-body">On Rhodes or pads, use Chew with a long Smooth for slow level sags, plus a little Murk. It sounds like a cassette that has been played too many times.</p>
+          <div class="usecase-settings">Chew: Rate 2&ndash;4 / Depth 0.6 / Smooth 25&ndash;40 ms &middot; Murk Mix 0.2</div>
+        </div>
+        <div class="usecase-card">
+          <div class="usecase-title">Next-room playback</div>
+          <p class="usecase-body">Use Murk only, with high Damp and Mix above 50 %, for a dark, muffled space. Automate Mix to move a part between the room and the front of the mix.</p>
+          <div class="usecase-settings">Murk: Room 0.85 / Damp 0.9 / Mix 0.55 &middot; others off</div>
+        </div>
+        <div class="usecase-card">
+          <div class="usecase-title">Noise bed for a whole track</div>
+          <p class="usecase-body">Put an instance on an empty aux with only Vinyl on. Vinyl plays even with no input, so you get <strong>a continuous record bed</strong> that you can fade with the track. Vinyl's hiss differs per channel, so the bed is stereo.</p>
+          <div class="usecase-settings">Vinyl only: Age to taste / Amount 1 &middot; set the level with the fader</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TIPS -->
+  <div class="content-grid wide">
+    <div class="panel">
+      <div class="panel-title">Tips and Workflow</div>
+      <div class="tip-list">
+        <div class="tip">
+          <span class="tip-icon">&#9654;</span>
+          <p class="tip-text"><strong>Off really means off.</strong> Dust Mix, Chew Depth, Murk Mix and Vinyl Amount at 0 each pass the signal through bit for bit. Turning a module off this way is the same as removing it.</p>
+        </div>
+        <div class="tip">
+          <span class="tip-icon">&#9654;</span>
+          <p class="tip-text"><strong>Set the Dust rate against your session rate.</strong> Dust's Rate only does anything below the host sample rate. At 44.1 kHz, anything from 44,100 Hz up is clean. The images Dust creates appear above half the Dust rate.</p>
+        </div>
+        <div class="tip">
+          <span class="tip-icon">&#9654;</span>
+          <p class="tip-text"><strong>Automate in steps, not sweeps.</strong> Parameters apply once per audio block with no smoothing, so that the off settings stay exactly dry. Fast automation of Dust Rate or Bits can step at the block rate. That suits lo-fi material, but avoid it on sustained notes.</p>
+        </div>
+        <div class="tip">
+          <span class="tip-icon">&#9654;</span>
+          <p class="tip-text"><strong>Change the Seed to move a pop.</strong> Vinyl's noise is deterministic. If a crackle lands on a vocal phrase in your bounce, try another seed rather than lowering Age.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="screw tl"></div><div class="screw tr"></div>
+    <span class="footer-text">Lizard VST &nbsp;&#183;&nbsp; Free VST3 &nbsp;&#183;&nbsp; macOS &amp; Windows</span>
+    <a class="footer-link" href="https://mrgloomy.bandcamp.com/" target="_blank">&#9829; Support the project — buy my music on Bandcamp</a>
+    <a class="footer-link" href="https://github.com/Ricardo-Silva91/vst_playground" target="_blank">&#8599; See on GitHub</a>
+  </footer>
+
+</div>
+<script src="assets/lizard_suite_dsp.js"></script>
+<script src="assets/lizard_suite_demo.js"></script>
+</body>
+</html>
