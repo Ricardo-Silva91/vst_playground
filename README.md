@@ -39,7 +39,7 @@ vst_playground/
 ├── docs/                        ← GitHub Pages site
 └── .github/
     └── workflows/
-        ├── build.yml            ← builds + releases a plugin (commit scope or manual)
+        ├── build.yml            ← builds + releases changed plugins (or one, manually)
         ├── tests.yml            ← runs all tests on push / PR
         └── pages.yml            ← deploys docs/ to GitHub Pages
 ```
@@ -90,23 +90,15 @@ This means all plugins share the same JUCE source. GitHub Actions checks out the
 
 Builds are triggered in two ways:
 
-### 1. Commit scope (automatic)
+### 1. Push to `main` (automatic)
 
-The workflow reads the scope from your commit message using [Conventional Commits](https://www.conventionalcommits.org/) format:
+Every push to `main` (including a merged PR) builds and releases each plugin whose folder changed in that push, for both platforms:
 
-```
-type(scope): description
-```
+- a change inside `pitch_wobble/` builds `pitch_wobble`
+- a change in `shared/` or a JUCE submodule bump builds every plugin
+- changes to Markdown files only, or outside plugin folders (`docs/`, `tests/`, …), build nothing
 
-The scope must exactly match the plugin's folder name:
-
-```bash
-git commit -m "feat(pitch_wobble): add smoothness knob"     # builds pitch_wobble
-git commit -m "fix(reverse_reverb): fix wet mix at 100%"    # builds reverse_reverb
-git commit -m "chore: update readme"                         # no build triggered
-```
-
-If no scope is present, no build runs.
+The commit message doesn't matter, though [Conventional Commits](https://www.conventionalcommits.org/) scopes like `fix(pitch_wobble): …` are still a good habit.
 
 ### 2. Manual trigger (workflow_dispatch)
 
@@ -190,10 +182,7 @@ Then unzip locally before installing (see Installing section above).
      - pitch_wobble
      - my_plugin      ← add this
    ```
-5. Commit with the matching scope to trigger a build:
-   ```bash
-   git commit -m "feat(my_plugin): initial version"
-   ```
+5. Push to `main` (or merge a PR) — the new folder triggers its first build.
 6. Once the build completes, a release will be created at:
    ```
    https://github.com/Ricardo-Silva91/vst_playground/releases/tag/my_plugin-latest

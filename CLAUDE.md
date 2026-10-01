@@ -99,13 +99,7 @@ Current plugins: `reverse_reverb`, `pitch_wobble`, `through_the_wall`, `drum_sma
 
 ### Triggering a build
 
-Builds are triggered by pushing to `main` with a [Conventional Commits](https://www.conventionalcommits.org/) scope that matches the plugin folder name:
-
-```bash
-git commit -m "feat(drum_smash): add new preset"      # builds drum_smash
-git commit -m "fix(pitch_wobble): fix LFO at low rates" # builds pitch_wobble
-git commit -m "chore: update readme"                    # no build triggered
-```
+Every push to `main` (including a merged PR) builds and releases each plugin whose folder changed in that push. Changes to `shared/` or the JUCE submodule build every plugin; Markdown-only changes and changes outside plugin folders build nothing. Keep using [Conventional Commits](https://www.conventionalcommits.org/) scopes (`fix(pitch_wobble): …`) in messages, but they no longer decide what builds.
 
 Manual trigger: **Actions → Build VST → Run workflow** — pick plugin and platform.
 
@@ -117,7 +111,7 @@ Manual trigger: **Actions → Build VST → Run workflow** — pick plugin and p
    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../JUCE JUCE_build)
    ```
 3. Add `<plugin_name>` to the `options:` list in `.github/workflows/build.yml`.
-4. Commit with a matching scope to trigger the first build.
+4. Push to `main` (or merge the PR) to trigger the first build.
 
 ### CMakeLists.txt conventions
 
