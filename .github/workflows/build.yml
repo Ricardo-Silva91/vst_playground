@@ -73,7 +73,7 @@ jobs:
             if echo "$CHANGED" | grep -qE '^(shared/|JUCE$)'; then
               PLUGINS="$ALL"
             else
-              PLUGINS=$(for p in $ALL; do echo "$CHANGED" | grep -q "^$p/" && echo "$p"; done)
+              PLUGINS=$(for p in $ALL; do if echo "$CHANGED" | grep -q "^$p/"; then echo "$p"; fi; done)
             fi
           fi
           JSON=$(printf '%s\n' $PLUGINS | jq -R . | jq -sc 'map(select(length > 0))')
