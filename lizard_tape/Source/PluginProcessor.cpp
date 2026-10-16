@@ -67,19 +67,19 @@ void LizardTapeAudioProcessor::prepareToPlay (double sampleRate, int)
     tape.snapParams (paramsFromState());
 }
 
-bool LizardTapeAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
-{
-    const auto in  = layouts.getMainInputChannelSet();
-    const auto out = layouts.getMainOutputChannelSet();
-    if (in != out) return false;
-    return out == juce::AudioChannelSet::mono() || out == juce::AudioChannelSet::stereo();
-}
-
 void LizardTapeAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
 {
     juce::ScopedNoDenormals noDenormals;
     const int numCh = buffer.getNumChannels();
     const int numSamp = buffer.getNumSamples();
+    // Any layout is accepted (FL Studio's VST3 host doesn't pass audio to
+    // plugins that reject its layout), so feed extra outputs from input 0.
+    const int numIn = getTotalNumInputChannels();
+    for (int ch = numIn; ch < numCh; ++ch)
+    {
+        if (numIn > 0) buffer.copyFrom (ch, 0, buffer, 0, 0, numSamp);
+        else           buffer.clear (ch, 0, numSamp);
+    }
     tape.setParams (paramsFromState());
     tape.process (buffer.getArrayOfWritePointers(), numCh, numSamp);
 }

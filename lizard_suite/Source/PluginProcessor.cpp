@@ -104,14 +104,6 @@ void LizardSuiteProcessor::prepareToPlay (double sampleRate, int /*samplesPerBlo
     reseed();
 }
 
-bool LizardSuiteProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
-{
-    const auto out = layouts.getMainOutputChannelSet();
-    if (out != juce::AudioChannelSet::mono() && out != juce::AudioChannelSet::stereo())
-        return false;
-    return out == layouts.getMainInputChannelSet();
-}
-
 void LizardSuiteProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
 {
     juce::ScopedNoDenormals noDenormals;
@@ -120,8 +112,13 @@ void LizardSuiteProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
     const int numOut = getTotalNumOutputChannels();
     const int n      = buffer.getNumSamples();
 
+    // Any layout is accepted (FL Studio's VST3 host doesn't pass audio to
+    // plugins that reject its layout), so feed extra outputs from input 0.
     for (int ch = numIn; ch < numOut; ++ch)
-        buffer.clear (ch, 0, n);
+    {
+        if (numIn > 0) buffer.copyFrom (ch, 0, buffer, 0, 0, n);
+        else           buffer.clear (ch, 0, n);
+    }
 
     auto get = [this] (const juce::String& id) { return apvts.getRawParameterValue (id)->load(); };
 

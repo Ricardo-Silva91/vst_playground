@@ -281,7 +281,7 @@ TEST_CASE("LizardSuite - lifecycle and layout", "[lizard_suite]")
         REQUIRE(allBounded(buf, 3.f));
     }
 
-    SECTION("mono and stereo layouts are supported, mismatched ones are not")
+    SECTION("any layout the host asks for is supported (FL Studio VST3)")
     {
         juce::AudioProcessor::BusesLayout mono, stereo, mixed;
         mono.inputBuses.add(juce::AudioChannelSet::mono());
@@ -292,7 +292,23 @@ TEST_CASE("LizardSuite - lifecycle and layout", "[lizard_suite]")
         mixed.outputBuses.add(juce::AudioChannelSet::stereo());
         REQUIRE(proc.checkBusesLayoutSupported(mono));
         REQUIRE(proc.checkBusesLayoutSupported(stereo));
-        REQUIRE(!proc.checkBusesLayoutSupported(mixed));
+        REQUIRE(proc.checkBusesLayoutSupported(mixed));
+    }
+
+    SECTION("mono in, stereo out feeds both outputs")
+    {
+        juce::AudioProcessor::BusesLayout mixed;
+        mixed.inputBuses.add(juce::AudioChannelSet::mono());
+        mixed.outputBuses.add(juce::AudioChannelSet::stereo());
+        REQUIRE(proc.setBusesLayout(mixed));
+        setParam(proc.apvts, "vinylAmount", 0.f);   // no noise bed, so ch 1 is only the input
+        proc.prepareToPlay(44100.0, 512);
+        juce::MidiBuffer midi;
+        juce::AudioBuffer<float> buf(2, 512);
+        fillWithSine(buf, 440.f, 44100.0, 0.5f);
+        buf.clear(1, 0, 512);                        // what the host leaves in the extra output
+        proc.processBlock(buf, midi);
+        REQUIRE(buf.getRMSLevel(1, 0, 512) > 0.05f);
     }
 
     SECTION("state save / restore round-trips parameters")

@@ -98,6 +98,28 @@ TEST_CASE("LizardTape - audio processing", "[lizard_tape]")
         mono.outputBuses.add(juce::AudioChannelSet::mono());
         REQUIRE(proc.checkBusesLayoutSupported(mono));
     }
+
+    SECTION("mono in, stereo out is supported and feeds both outputs (FL Studio VST3)")
+    {
+        LizardTapeAudioProcessor proc;
+        juce::AudioProcessor::BusesLayout mixed;
+        mixed.inputBuses.add(juce::AudioChannelSet::mono());
+        mixed.outputBuses.add(juce::AudioChannelSet::stereo());
+        REQUIRE(proc.checkBusesLayoutSupported(mixed));
+        REQUIRE(proc.setBusesLayout(mixed));
+        setParam(proc.apvts, "hiss", 0.f);           // no hiss, so ch 1 is only the input
+        proc.prepareToPlay(44100.0, 512);
+        juce::AudioBuffer<float> buf(2, 512);
+        float rms = 0.f;
+        for (int n = 0; n < 4; ++n)                  // get past the 12 ms base delay
+        {
+            fillWithSine(buf, 440.f, 44100.0, 0.5f);
+            buf.clear(1, 0, 512);                    // what the host leaves in the extra output
+            proc.processBlock(buf, midi);
+            rms = buf.getRMSLevel(1, 0, 512);
+        }
+        REQUIRE(rms > 0.05f);
+    }
 }
 
 // ── State management tests ────────────────────────────────────────────────────
